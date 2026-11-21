@@ -36,6 +36,8 @@
 ## 🍺 Installation via Homebrew
 
 ```bash
+brew tap gionnio/tap
+brew trust gionnio/tap
 brew install --cask gionnio/tap/retroteca
 ```
 
