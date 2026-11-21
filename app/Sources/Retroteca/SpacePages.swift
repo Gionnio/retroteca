@@ -88,12 +88,15 @@ struct SpacePageView: View {
         }
         .fadesUnderTopBar()
         .task { model.space.measure(games: model.games) }
+        // A disk plugged in or ejected while the page is open: its card and free space follow.
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in model.space.measure(games: model.games) }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in model.space.measure(games: model.games) }
         .sheet(item: $freeing) { entry in
             FreeSpaceSheet(entry: entry, game: entry.gameID.flatMap(model.game(id:))) { freeing = nil }
                 .environment(\.platea, colors).environmentObject(model)
         }
         .sheet(isPresented: $pickingDisk) {
-            DiskPicker(volumes: space.report?.volumes ?? GamesVolume.mounted()) { pickingDisk = false }
+            DiskPicker { pickingDisk = false }
                 .environment(\.platea, colors).environmentObject(model)
         }
         .confirmationDialog(String(localized: "Liberare le cache di tutti i giochi?"), isPresented: $confirmAll) {
@@ -426,8 +429,9 @@ struct FreeSpaceSheet: View {
 struct DiskPicker: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.platea) private var colors
-    let volumes: [GamesVolume]
     let close: () -> Void
+    /// Read when the sheet opens and again whenever a disk is plugged in or ejected.
+    @State private var volumes = GamesVolume.mounted()
     @State private var selected: String?
 
     var body: some View {
@@ -479,7 +483,14 @@ struct DiskPicker: View {
         .padding(22)
         .frame(width: 500)
         .background(colors.bg)
-        .onAppear { selected = GamesLocation.volume?.path }
+        .onAppear { volumes = GamesVolume.mounted(); selected = GamesLocation.volume?.path }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in reload() }
+        .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didUnmountNotification)) { _ in reload() }
+    }
+
+    private func reload() {
+        volumes = GamesVolume.mounted()
+        if let id = selected, !volumes.contains(where: { $0.id == id }) { selected = nil }
     }
 
     static func text(_ problem: GamesVolume.Problem) -> String {
