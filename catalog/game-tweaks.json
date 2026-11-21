@@ -1,0 +1,71 @@
+{
+  "version": "2026-11-15.1",
+  "notes": "Settings Retroteca recommends for a game's native build, beyond the engine's tested defaults. Each value names a setting of the official engine at the commit it was checked on (the game's launcher list, or docs/env_switches.tsv as a player or switch) and cites where the engine's own notes back it. Nothing from forks or unmerged patches. A value measured on one chip family carries onlyOn / avoidOn, as the same setting can help one Mac and cost another. A value that needs a newer engine than the user may have carries engineSince, the date of the engine commit that brought it.",
+  "games": [
+    {
+      "titleID": "0400486024DEC000",
+      "title": "The Legend of Zelda: Ocarina of Time",
+      "engine": "nxnative",
+      "checkedCommit": "94a0944755da1a443f42651bf7ee49ab24ed5ee5",
+      "settings": [
+        {
+          "variable": "DM_DYNAMIC_RESOLUTION",
+          "value": "0",
+          "why": {
+            "it": "Spenta tiene la risoluzione piena. Accesa, nelle scene pesanti scende al minimo (683×384) senza guadagnare fotogrammi.",
+            "en": "Off keeps full resolution. On, heavier scenes drop it to the floor (683×384) without gaining frames."
+          },
+          "source": "https://github.com/seedds/nxnative/blob/94a0944755da1a443f42651bf7ee49ab24ed5ee5/dm/games/0400486024DEC000/README.md#dynamic-resolution"
+        },
+        {
+          "variable": "DM_PRESENT_UPSCALE",
+          "value": "metalfx",
+          "why": {
+            "it": "Ingrandisce l'immagine fino allo schermo con MetalFX invece che in modo bilineare: più nitida, e sui chip recenti non costa tempo GPU misurabile. Non sugli M1: su un M1 Pro porta da circa 30 a 16–22 fps.",
+            "en": "Scales the picture to the screen with MetalFX instead of bilinear: sharper, and on recent chips it costs no measurable GPU time. Not on M1: on an M1 Pro it takes about 30 fps down to 16–22."
+          },
+          "source": "https://github.com/seedds/nxnative/blob/94a0944755da1a443f42651bf7ee49ab24ed5ee5/dm/games/0400486024DEC000/README.md#frame-rate",
+          "avoidOn": [
+            "M1"
+          ]
+        },
+        {
+          "variable": "DM_UPSCALER",
+          "value": "metalfx",
+          "optional": true,
+          "engineSince": "2026-11-15",
+          "why": {
+            "it": "Il gioco ingrandisce l'immagine con una sua rete neurale, pesante sui Mac. MetalFX fa lo stesso lavoro in circa metà del tempo GPU (su un M2 Air da 2,5 a 1,3 ms a fotogramma) con contorni un po' più morbidi. Il motore tiene la rete del gioco come predefinita.",
+            "en": "The game upscales its picture with its own neural network, heavy on a Mac. MetalFX does the same job in about half the GPU time (2.5 to 1.3 ms a frame on an M2 Air) with slightly softer edges. The engine keeps the game's network as the default."
+          },
+          "source": "https://github.com/seedds/nxnative/blob/94a0944755da1a443f42651bf7ee49ab24ed5ee5/docs/reference/rendering.md#a-games-own-upscaler-drawn-by-metalfx"
+        },
+        {
+          "variable": "DM_FPS_TARGET",
+          "value": "30",
+          "onlyOn": [
+            "M1"
+          ],
+          "why": {
+            "it": "Sugli M1 i 60 fps non si raggiungono (su un M1 Pro 16 GB circa 20 fps con frame da 26–46 ms): 30 fps fissi danno un ritmo regolare invece di salti tra 20 e 30.",
+            "en": "M1 chips do not reach 60 fps (about 20 fps on a 16 GB M1 Pro, with 26–46 ms frames): a 30 fps target keeps an even pace instead of jumps between 20 and 30."
+          },
+          "source": "https://github.com/seedds/nxnative/issues/2501"
+        },
+        {
+          "variable": "DM_OPMODE",
+          "value": "0",
+          "onlyOn": [
+            "M1"
+          ],
+          "optional": true,
+          "why": {
+            "it": "Modalità portatile: risoluzione interna più bassa, meno lavoro per la GPU degli M1, immagine meno definita. Su un M1 Pro ha portato vicino ai 30 fps, ma in quella prova c'era anche una modifica sperimentale del motore.",
+            "en": "Handheld mode: lower internal resolution, less work for M1 GPUs, a softer picture. On an M1 Pro it came close to 30 fps, though that test also carried an experimental engine change."
+          },
+          "source": "https://github.com/seedds/nxnative/issues/2501"
+        }
+      ]
+    }
+  ]
+}

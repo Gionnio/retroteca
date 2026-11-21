@@ -1,0 +1,33 @@
+{
+  "version": "2026-11-15",
+  "notes": "Engines that turn the user's own Switch and Switch 2 games into native Mac apps, built on the user's Mac. Nothing is downloaded but the engine's source and its tools; the game, its keys and firmware always come from the user. Each engine is pinned to a commit Retroteca was tested with.",
+  "engines": [
+    {
+      "id": "nxnative",
+      "name": "nxnative",
+      "repo": "seedds/nxnative",
+      "license": "MIT",
+      "commit": "94a0944755da1a443f42651bf7ee49ab24ed5ee5",
+      "committedAt": "2026-11-16",
+      "platforms": [
+        "switch",
+        "switch2"
+      ],
+      "requires": {
+        "macOS": "26.6",
+        "xcode": "27.2",
+        "python": "3.14",
+        "brew": [
+          "xcodegen",
+          "zstd",
+          "glslang"
+        ],
+        "casks": [],
+        "pythonRequirements": ".github/requirements/tools.txt"
+      },
+      "script": "scripts/build_ipa_from_nsp.py",
+      "profiles": "dm/games",
+      "credit": "nxnative by seedds (MIT); the front-end contract follows docs/frontends.md."
+    }
+  ]
+}

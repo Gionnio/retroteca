@@ -1,0 +1,8 @@
+.DS_Store
+build/
+dist/
+*.profraw
+.build/
+tools/strings_en_new.json
+/dev/
+/CLAUDE.md
