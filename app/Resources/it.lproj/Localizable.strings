@@ -179,6 +179,7 @@
 "Frequenza" = "Frequenza";
 "Funziona" = "Funziona";
 "GameBanana non risponde: riprova più tardi." = "GameBanana non risponde: riprova più tardi.";
+"Generale" = "Generale";
 "Gioca" = "Gioca";
 "Gioco" = "Gioco";
 "Gioco base" = "Gioco base";
@@ -236,6 +237,7 @@
 "La libreria non si legge: %@" = "La libreria non si legge: %@";
 "La libreria non si salva: %@" = "La libreria non si salva: %@";
 "La libreria è vuota: trascina qui i tuoi giochi." = "La libreria è vuota: trascina qui i tuoi giochi.";
+"La lingua cambia al prossimo avvio." = "La lingua cambia al prossimo avvio.";
 "La prossima costruzione di ogni gioco ripartirà da capo." = "La prossima costruzione di ogni gioco ripartirà da capo.";
 "Lascia sempre liberi" = "Lascia sempre liberi";
 "Le impostazioni arrivano con l'app del gioco: costruiscila prima." = "Le impostazioni arrivano con l'app del gioco: costruiscila prima.";
@@ -248,6 +250,7 @@
 "Liberare le cache di tutti i giochi?" = "Liberare le cache di tutti i giochi?";
 "Libreria" = "Libreria";
 "Libreria svuotata: %lld giochi tolti." = "Libreria svuotata: %lld giochi tolti.";
+"Lingua" = "Lingua";
 "Lingua del gioco" = "Lingua del gioco";
 "MOD DEI FILE DEL GIOCO" = "MOD DEI FILE DEL GIOCO";
 "MOD ONLINE" = "MOD ONLINE";
@@ -335,6 +338,7 @@
 "Retroteca" = "Retroteca";
 "Retroteca deve installare gli strumenti per costruire i giochi Switch." = "Retroteca deve installare gli strumenti per costruire i giochi Switch.";
 "Retroteca non include giochi, firmware né chiavi: usa i dump dei giochi che possiedi." = "Retroteca non include giochi, firmware né chiavi: usa i dump dei giochi che possiedi.";
+"Riavvia ora" = "Riavvia ora";
 "Ricontrolla i file" = "Ricontrolla i file";
 "Ricostruirle può richiedere ore." = "Ricostruirle può richiedere ore.";
 "Ricostruisci" = "Ricostruisci";
@@ -378,6 +382,7 @@
 "Sfoglia" = "Sfoglia";
 "Shader per Metal" = "Shader per Metal";
 "Si vede quando gli strumenti sono pronti" = "Si vede quando gli strumenti sono pronti";
+"Sistema" = "Sistema";
 "Soglia della vibrazione" = "Soglia della vibrazione";
 "Solo controller" = "Solo controller";
 "Solo mod dei file del gioco (romfs); quella più in alto vince." = "Solo mod dei file del gioco (romfs); quella più in alto vince.";

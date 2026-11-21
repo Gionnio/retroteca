@@ -4,10 +4,8 @@ import RetrotecaCore
 struct SettingsView: View {
     var body: some View {
         TabView {
-            LibrarySettings().frame(width: 560)
-                .tabItem { Label("Libreria", systemImage: "square.grid.2x2") }
-            AppearanceSettings().frame(width: 560)
-                .tabItem { Label("Aspetto", systemImage: "circle.lefthalf.filled") }
+            GeneralSettings().frame(width: 560)
+                .tabItem { Label("Generale", systemImage: "gearshape") }
             SpaceSettingsTab().frame(width: 560)
                 .tabItem { Label("Spazio", systemImage: "internaldrive") }
             // Wider: the drawn pad needs room for its callouts on both sides.
@@ -17,8 +15,12 @@ struct SettingsView: View {
     }
 }
 
-private struct LibrarySettings: View {
+/// Look, language and library in one tab.
+private struct GeneralSettings: View {
     @EnvironmentObject var model: AppModel
+    @AppStorage("palette") private var palette = PlateaPalette.grafite.rawValue
+    @State private var language = AppLanguage.current
+    @State private var languageChanged = false
     @AppStorage("checkFilesAtLaunch") private var checkFilesAtLaunch = true
     @AppStorage("copyGamesToLibrary") private var copyGamesToLibrary = false
     @AppStorage("downloadArtwork") private var downloadArtwork = true
@@ -26,35 +28,50 @@ private struct LibrarySettings: View {
 
     var body: some View {
         Form {
-            Section {
+            Section("Aspetto") {
+                Picker(selection: $palette) {
+                    ForEach(PlateaPalette.allCases) { Text($0.label).tag($0.rawValue) }
+                } label: {
+                    Text("Palette")
+                    Text("Auto: Giorno dalle 7 alle 19, Notte blu la sera.")
+                }
+                .pickerStyle(.segmented)
+                Picker("Lingua", selection: $language) {
+                    Text("Sistema").tag(AppLanguage.system)
+                    Text(verbatim: "Italiano").tag(AppLanguage.italian)
+                    Text(verbatim: "English").tag(AppLanguage.english)
+                }
+                .onChange(of: language) { _, value in
+                    AppLanguage.set(value)
+                    languageChanged = true
+                }
+                if languageChanged {
+                    LabeledContent("La lingua cambia al prossimo avvio.") {
+                        Button("Riavvia ora") { AppLanguage.relaunch() }
+                    }
+                }
+            }
+            Section("Libreria") {
                 Toggle(isOn: $copyGamesToLibrary) {
                     Text("Copia i giochi importati nella cartella di Retroteca")
                     Text(copyGamesToLibrary
                          ? "I giochi nuovi vanno in Retroteca/Games e occupano il doppio."
                          : "Spento: i giochi restano dove sono.")
                 }
-            }
-            Section {
                 Toggle(isOn: $downloadArtwork) {
                     Text("Scarica copertine e schermate")
                     Text("Dal negozio Nintendo.")
                 }
-            }
-            Section {
                 Toggle(isOn: $checkFilesAtLaunch) {
                     Text("Controlla i file dei giochi all'avvio")
                     Text("Segnala i giochi con file spostati o cancellati.")
                 }
-            }
-            Section {
                 LabeledContent("Cartella di Retroteca") {
                     Button(model.libraryLocation.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")) {
                         NSWorkspace.shared.open(model.libraryLocation)
                     }
                     .buttonStyle(.link)
                 }
-            }
-            Section {
                 LabeledContent("Svuota la libreria") {
                     Button("Svuota…", role: .destructive) { confirmEmpty = true }
                         .disabled(model.games.isEmpty)
@@ -67,7 +84,7 @@ private struct LibrarySettings: View {
             Text("\(model.games.count) giochi escono dalla libreria. I file restano.")
         }
         .formStyle(.grouped)
-        .frame(height: 500)
+        .frame(height: 480)
     }
 }
 
@@ -106,24 +123,28 @@ private struct SpaceSettingsTab: View {
     }
 }
 
-private struct AppearanceSettings: View {
-    @AppStorage("palette") private var palette = PlateaPalette.grafite.rawValue
+/// The app's own language, set in its preferences domain only (AppleLanguages); it applies from the next launch.
+enum AppLanguage: String {
+    case system, italian = "it", english = "en"
 
-    var body: some View {
-        Form {
-            Picker(selection: $palette) {
-                ForEach(PlateaPalette.allCases) { Text($0.label).tag($0.rawValue) }
-            } label: {
-                Text("Palette")
-                Text("Auto: Giorno dalle 7 alle 19, Notte blu la sera.")
-            }
-            .pickerStyle(.segmented)
-        }
-        .formStyle(.grouped)
-        .frame(height: 150)
+    static var current: AppLanguage {
+        let own = UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "")?["AppleLanguages"] as? [String]
+        return own?.first.flatMap { AppLanguage(rawValue: String($0.prefix(2))) } ?? .system
+    }
+
+    static func set(_ language: AppLanguage) {
+        if language == .system { UserDefaults.standard.removeObject(forKey: "AppleLanguages") }
+        else { UserDefaults.standard.set([language.rawValue], forKey: "AppleLanguages") }
+    }
+
+    static func relaunch() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        process.arguments = ["-n", Bundle.main.bundlePath]
+        try? process.run()
+        NSApp.terminate(nil)
     }
 }
-
 
 /// Controller: how Retroteca is driven, the connected pads, and each pad's buttons (saved per pad).
 private struct ControllerSettings: View {

@@ -111,7 +111,7 @@
 "Compatto" = "Compact";
 "Condividi" = "Share";
 "Condividi con l'iPhone" = "Share with the iPhone";
-"Console" = "Consoles";
+"Console" = "Console";
 "Console da riconoscere" = "Console to identify";
 "Contenuto sconosciuto" = "Unknown contents";
 "Continua a giocare" = "Continue Playing";
@@ -179,6 +179,7 @@
 "Frequenza" = "Frame rate";
 "Funziona" = "Works";
 "GameBanana non risponde: riprova più tardi." = "GameBanana is not answering: try again later.";
+"Generale" = "General";
 "Gioca" = "Play";
 "Gioco" = "Game";
 "Gioco base" = "Base game";
@@ -236,6 +237,7 @@
 "La libreria non si legge: %@" = "The library cannot be read: %@";
 "La libreria non si salva: %@" = "The library cannot be saved: %@";
 "La libreria è vuota: trascina qui i tuoi giochi." = "The library is empty: drop your games here.";
+"La lingua cambia al prossimo avvio." = "The language changes at the next launch.";
 "La prossima costruzione di ogni gioco ripartirà da capo." = "Each game's next build will start from scratch.";
 "Lascia sempre liberi" = "Always keep free";
 "Le impostazioni arrivano con l'app del gioco: costruiscila prima." = "Settings come with the game's app: build it first.";
@@ -248,6 +250,7 @@
 "Liberare le cache di tutti i giochi?" = "Free every game's caches?";
 "Libreria" = "Library";
 "Libreria svuotata: %lld giochi tolti." = "Library emptied: %lld games removed.";
+"Lingua" = "Language";
 "Lingua del gioco" = "Game language";
 "MOD DEI FILE DEL GIOCO" = "GAME FILE MODS";
 "MOD ONLINE" = "ONLINE MODS";
@@ -335,6 +338,7 @@
 "Retroteca" = "Retroteca";
 "Retroteca deve installare gli strumenti per costruire i giochi Switch." = "Retroteca needs to install the tools that build Switch games.";
 "Retroteca non include giochi, firmware né chiavi: usa i dump dei giochi che possiedi." = "Retroteca does not include games, firmware or keys: use dumps of the games you own.";
+"Riavvia ora" = "Restart now";
 "Ricontrolla i file" = "Check Files Again";
 "Ricostruirle può richiedere ore." = "Rebuilding them can take hours.";
 "Ricostruisci" = "Rebuild";
@@ -378,6 +382,7 @@
 "Sfoglia" = "Browse";
 "Shader per Metal" = "Metal shaders";
 "Si vede quando gli strumenti sono pronti" = "Shown once the tools are ready";
+"Sistema" = "System";
 "Soglia della vibrazione" = "Rumble cutoff";
 "Solo controller" = "Controller only";
 "Solo mod dei file del gioco (romfs); quella più in alto vince." = "Only game-file mods (romfs); the upper one wins.";

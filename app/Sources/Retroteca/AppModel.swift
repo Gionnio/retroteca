@@ -575,6 +575,10 @@ final class AppModel: ObservableObject {
     /// - Parameter force: ask again even if the store was asked in the last 30 days.
     func fetchSwitchMetadata(force: Bool = false) {
         guard UserDefaults.standard.object(forKey: "downloadArtwork") as? Bool ?? true else { return }
+        // Titles and descriptions come in the app's language: asked again when the language changes.
+        let appLanguage = Locale.current.language.languageCode?.identifier ?? ""
+        let force = force || UserDefaults.standard.string(forKey: "metadataLanguage") != appLanguage
+        UserDefaults.standard.set(appLanguage, forKey: "metadataLanguage")
         let due = store.games.filter { game in
             game.kind == .switchNative && game.titleID != nil &&
             (force || game.screenshots == nil || game.metadataCheckedAt.map { Date().timeIntervalSince($0) > 30 * 86400 } ?? true)
