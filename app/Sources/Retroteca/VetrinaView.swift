@@ -22,10 +22,15 @@ struct VetrinaView: View {
         let rows = makeRows()
         let hero = heroGame(rows)
         ZStack(alignment: .topLeading) {
-            if let hero {
-                GameArt(game: hero, backdrop: true).ignoresSafeArea()
-                    .animation(.easeInOut(duration: 0.35), value: hero.id)
+            // One picture per game: the old one fades out while the new one fades in.
+            ZStack {
+                if let hero {
+                    GameArt(game: hero, backdrop: true).ignoresSafeArea()
+                        .id(hero.id)
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.25), value: hero?.id)
             BackdropShade().ignoresSafeArea()
             // As in Platea: the hero stays put, only the rows scroll, following the focused tile.
             VStack(alignment: .leading, spacing: 0) {
@@ -65,7 +70,11 @@ struct VetrinaView: View {
         .focusable()
         .focused($focused)
         .focusEffectDisabled()
-        .onAppear { focused = true }
+        .onAppear {
+            focused = true
+            // Every picture the Home page can show, decoded before it is needed.
+            ArtworkCache.prefetch(rows.flatMap(\.games).flatMap { [$0.backdropURL ?? $0.coverURL, $0.coverURL] }.compactMap { $0 })
+        }
         .onKeyPress(.leftArrow) { move(rows, dx: -1, dy: 0) }
         .onKeyPress(.rightArrow) { move(rows, dx: 1, dy: 0) }
         .onKeyPress(.upArrow) { move(rows, dx: 0, dy: -1) }
@@ -149,9 +158,11 @@ struct VetrinaView: View {
         }
         r = min(max(r + dy, 0), rows.count - 1)
         c = min(max(c + dx, 0), rows[r].games.count - 1)
+        let target = rows[r].games[c].id
+        (target == heroGame(rows)?.id && rows[r].id == focusRow ? InterfaceSound.blocked : InterfaceSound.move).play()
         focusRow = rows[r].id
         if dy != 0 { scrollTarget = rows[r].id }
-        withAnimation(.easeOut(duration: 0.18)) { model.heroID = rows[r].games[c].id }
+        withAnimation(.easeOut(duration: 0.18)) { model.heroID = target }
         return .handled
     }
 }

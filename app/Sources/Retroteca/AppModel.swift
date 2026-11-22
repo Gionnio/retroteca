@@ -116,12 +116,16 @@ final class AppModel: ObservableObject {
     /// Top pages (pills) start a new history; detail pages remember where they came from.
     func open(_ page: Page) {
         guard page != self.page else { return }
+        (page.isDetail ? InterfaceSound.select : InterfaceSound.page).play()
         if page.isDetail { history.append(self.page) } else { history.removeAll() }
         if case .game(let id) = page { selection = id }
         self.page = page
     }
 
-    func back() { page = history.popLast() ?? .vetrina }
+    func back() {
+        InterfaceSound.back.play()
+        page = history.popLast() ?? .vetrina
+    }
 
     func closeGamePage() { back() }
 
@@ -195,6 +199,7 @@ final class AppModel: ObservableObject {
                 message = String(localized: "Costruisci prima il gioco.")
                 return
             }
+            InterfaceSound.launch.play()
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true
             // The choices are made in Retroteca's Options: skip the app's own window, unless ⌥ is held.

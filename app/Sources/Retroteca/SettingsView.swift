@@ -19,6 +19,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @EnvironmentObject var model: AppModel
     @AppStorage("palette") private var palette = PlateaPalette.grafite.rawValue
+    @AppStorage(InterfaceSound.settingKey) private var sounds = true
     @State private var language = AppLanguage.current
     @State private var languageChanged = false
     @AppStorage("checkFilesAtLaunch") private var checkFilesAtLaunch = true
@@ -36,6 +37,8 @@ private struct GeneralSettings: View {
                     Text("Auto: Giorno dalle 7 alle 19, Notte blu la sera.")
                 }
                 .pickerStyle(.segmented)
+                Toggle("Suoni dell'interfaccia", isOn: $sounds)
+                    .onChange(of: sounds) { _, on in if on { InterfaceSound.select.play() } }
                 Picker("Lingua", selection: $language) {
                     Text("Sistema").tag(AppLanguage.system)
                     Text(verbatim: "Italiano").tag(AppLanguage.italian)

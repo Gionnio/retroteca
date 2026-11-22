@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 import RetrotecaCore
 
 /// Colours of the Vetrina pages, as in Platea Home: Grafite, Giorno, Notte blu, Auto.
@@ -255,19 +256,48 @@ struct StatusBadge: View {
     }
 }
 
-/// Decoded artwork kept in memory, so redrawing a row does not read the disk again.
+/// Artwork decoded once, at most as large as a window needs, and kept in memory: drawing never waits for a JPEG to decode.
+/// The Home page decodes its games' images ahead, off the main thread, so moving between games swaps pictures at once.
 enum ArtworkCache {
+    /// Longest side kept: sharp on a full-window backdrop, a fraction of the memory of a store original.
+    static let maxPixels = 2048
+
     private static let cache: NSCache<NSURL, NSImage> = {
         let cache = NSCache<NSURL, NSImage>()
-        cache.countLimit = 400
+        cache.totalCostLimit = 512 << 20
         return cache
     }()
+    private static let queue = DispatchQueue(label: "com.github.gionnio.Retroteca.artwork", qos: .userInitiated, attributes: .concurrent)
 
     static func image(at url: URL) -> NSImage? {
         if let image = cache.object(forKey: url as NSURL) { return image }
-        guard let image = NSImage(contentsOf: url) else { return nil }
-        cache.setObject(image, forKey: url as NSURL)
+        guard let (image, cost) = decode(url) else { return nil }
+        cache.setObject(image, forKey: url as NSURL, cost: cost)
         return image
+    }
+
+    /// Decodes these images in the background, the ones not in memory yet.
+    static func prefetch(_ urls: [URL]) {
+        for url in urls where cache.object(forKey: url as NSURL) == nil {
+            queue.async {
+                guard cache.object(forKey: url as NSURL) == nil, let (image, cost) = decode(url) else { return }
+                cache.setObject(image, forKey: url as NSURL, cost: cost)
+            }
+        }
+    }
+
+    /// A bitmap decoded now (not when first drawn), downsampled to `maxPixels`.
+    private static func decode(_ url: URL) -> (NSImage, Int)? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixels,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        return (image, cgImage.bytesPerRow * cgImage.height)
     }
 
     /// After the file at `url` was replaced.

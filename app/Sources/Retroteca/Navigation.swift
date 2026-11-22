@@ -377,10 +377,16 @@ struct GridNavigation: ViewModifier {
         guard count > 0 else { return .ignored }
         let current = focus ?? -1
         switch command {
-        case .left: focus = max(current - 1, 0)
-        case .right: focus = min(current + 1, count - 1)
-        case .up: focus = current < 0 ? 0 : max(current - max(columns, 1), 0)
-        case .down: focus = current < 0 ? 0 : min(current + max(columns, 1), count - 1)
+        case .left, .right, .up, .down:
+            let target: Int
+            switch command {
+            case .left: target = max(current - 1, 0)
+            case .right: target = min(current + 1, count - 1)
+            case .up: target = current < 0 ? 0 : max(current - max(columns, 1), 0)
+            default: target = current < 0 ? 0 : min(current + max(columns, 1), count - 1)
+            }
+            InterfaceSound.move.play()
+            focus = target
         case .select:
             guard current >= 0 else { focus = 0; return .handled }
             open(current)

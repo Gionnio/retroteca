@@ -48,6 +48,7 @@ struct LibraryGridView: View {
         }
         .fadesUnderTopBar()
         .scrollIndicators(.automatic)
+        .onAppear { ArtworkCache.prefetch(model.games.compactMap { $0.coverURL ?? $0.backdropURL }) }
         .gridNavigation(count: games.count, columns: adaptiveColumns(width: gridWidth, minimum: 140, spacing: 16), focus: $focus) { index in
             model.open(.game(games[index].id))
         }

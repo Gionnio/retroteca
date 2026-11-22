@@ -30,6 +30,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Retroteca" "$APP/Contents/MacOS/Retroteca"
 cp -R "$ROOT/app/Resources/"*.lproj "$APP/Contents/Resources/"
+cp -R "$ROOT/app/Resources/Sounds" "$APP/Contents/Resources/"
 cp "$ROOT/catalog/"*.json "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
