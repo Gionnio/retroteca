@@ -435,8 +435,8 @@ private struct TileRow: View {
     @State private var width: CGFloat = 0
     @State private var hovering = false
 
-    /// Tiles that fit in the row (210 wide, 14 apart).
-    private var perPage: Int { max(1, Int((width + 14) / 224)) }
+    /// Tiles that fit in the row (the smaller size, 14 apart).
+    private var perPage: Int { max(1, Int((width + 14) / (Tile.width + 14))) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -448,7 +448,7 @@ private struct TileRow: View {
             }
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 14) {
+                    HStack(alignment: .top, spacing: 14) {
                         ForEach(row.games) { game in
                             Tile(game: game, isFocused: game.id == focusedID) { choose(game) }.id(game.id)
                         }
@@ -507,32 +507,29 @@ private struct Tile: View {
     let isFocused: Bool
     let choose: () -> Void
 
+    /// The chosen game at full size, the others smaller (as in the approved mockup: 14.5 to 11).
+    static let focusedWidth: CGFloat = 210
+    static let width: CGFloat = 160
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            ZStack(alignment: .bottomLeading) {
-                GameArt(game: game)
-                if !GameArt.hasImage(game) {
-                    LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
-                    Text(game.title)
-                        .font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.6), radius: 3, y: 1)
-                        .lineLimit(2).padding(10)
-                }
-            }
-            .saturation(dimmed ? 0.25 : 1).brightness(dimmed ? -0.15 : 0)
-            .overlay { BuildOverlay(game: game) }
-            .frame(width: 210, height: 118)
-            .overlay(alignment: .topTrailing) { StatusBadge(game: game) }
-            .clipShape(RoundedRectangle(cornerRadius: 9))
-            .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(isFocused ? colors.fg : .clear, lineWidth: 2.5).padding(-4))
-            .shadow(color: .black.opacity(isFocused ? 0.45 : 0.25), radius: isFocused ? 14 : 2, y: isFocused ? 10 : 1)
-            .scaleEffect(isFocused ? 1.04 : 1)
-            .offset(y: isFocused ? -4 : 0)
-            Text(game.title).font(.system(size: 12.5)).foregroundStyle(colors.fg).lineLimit(1).padding(.top, 5)
-            Text(subtitle).font(.system(size: 11)).foregroundStyle(colors.secondary).lineLimit(1)
+        let width = isFocused ? Self.focusedWidth : Self.width
+        ZStack(alignment: .bottomLeading) {
+            GameArt(game: game)
+            LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .center, endPoint: .bottom)
+            Text(game.title)
+                .font(.system(size: isFocused ? 12.5 : 11.5, weight: .bold)).foregroundStyle(.white)
+                .shadow(color: .black.opacity(0.7), radius: 3, y: 1)
+                .lineLimit(1).padding(.horizontal, 9).padding(.bottom, 7)
         }
-        .frame(width: 210)
+        .saturation(dimmed ? 0.25 : 1).brightness(dimmed ? -0.15 : 0)
+        .overlay { BuildOverlay(game: game) }
+        .frame(width: width, height: width * 9 / 16)
+        .overlay(alignment: .topTrailing) { StatusBadge(game: game) }
+        .clipShape(RoundedRectangle(cornerRadius: 9))
+        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(isFocused ? colors.fg : .clear, lineWidth: 2.5).padding(-4))
+        .shadow(color: .black.opacity(isFocused ? 0.45 : 0.25), radius: isFocused ? 14 : 2, y: isFocused ? 10 : 1)
         .contentShape(Rectangle())
+        .help(subtitle.isEmpty ? game.title : "\(game.title) · \(subtitle)")
         .onTapGesture(count: 2) { model.open(.game(game.id)) }
         .onTapGesture { choose() }
         .animation(.easeOut(duration: 0.18), value: isFocused)
@@ -604,9 +601,9 @@ struct BuildOverlay: View {
             }
         case .none:
             if game.nativeApp == nil {
-                Text("Da costruire").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 8).padding(.vertical, 3).background(.black.opacity(0.55), in: Capsule())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading).padding(8)
+                Text("Da costruire").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 7).padding(.vertical, 2).background(.black.opacity(0.55), in: Capsule())
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).padding(7)
             }
         }
     }
@@ -634,11 +631,10 @@ private struct LibraryTile: View {
                 Text("Libreria").font(.system(size: 13, weight: .semibold))
             }
             .foregroundStyle(colors.secondary)
-            .frame(width: 210, height: 118)
+            .frame(width: Tile.width, height: Tile.width * 9 / 16)
             .background(colors.card, in: RoundedRectangle(cornerRadius: 9))
             .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(colors.line, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 34)
     }
 }
