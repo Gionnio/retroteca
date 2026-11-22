@@ -14,6 +14,7 @@ struct RetrotecaApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(model)
+                .environment(\.padFocus, model.padFocus)
         }
         .defaultSize(width: 1440, height: 900)
         .commands {

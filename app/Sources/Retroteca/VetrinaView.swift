@@ -5,6 +5,8 @@ import RetrotecaCore
 /// Arrows move between tiles, Return plays (or builds the game), Space opens the game page.
 struct VetrinaView: View {
     @EnvironmentObject var model: AppModel
+    /// The top bar's focus: while it has it, the chosen tile keeps its size but loses its ring.
+    @ObservedObject var pad: PadFocus
     @Environment(\.platea) private var colors
     @FocusState private var focused: Bool
     /// The row of the chosen tile: a game listed in two rows is chosen in one of them only.
@@ -59,7 +61,7 @@ struct VetrinaView: View {
                         // First screen: the games on top, the chosen one's details at the bottom.
                         VStack(alignment: .leading, spacing: 0) {
                             if let row = rows.first {
-                                TileRow(row: row, focusedID: hero?.id, buildChip: buildChip) { game in
+                                TileRow(row: row, focusedID: hero?.id, ring: !pad.inBar, buildChip: buildChip) { game in
                                     zone = .tiles
                                     withAnimation(.easeOut(duration: 0.15)) { model.heroID = game.id }
                                 }
@@ -190,6 +192,7 @@ struct VetrinaView: View {
 
     /// One command, from the keyboard or the pad, for the zone that has the focus.
     private func handle(_ command: NavCommand, rows: [Row]) -> KeyPress.Result {
+        if model.barKey(command) { return .handled }
         guard let hero = heroGame(rows) else { return .ignored }
         if let open = openShot {
             let count = shots(hero).count
@@ -207,7 +210,9 @@ struct VetrinaView: View {
         case (.tiles, .left): return move(rows, dx: -1, dy: 0)
         case (.tiles, .right): return move(rows, dx: 1, dy: 0)
         case (.tiles, .down): go(.buttons(0))
-        case (.tiles, .select): model.primaryAction(for: hero)
+        // A on a tile goes down to the game's first button (Play or Build), like a console: it does not start it.
+        case (.tiles, .select): go(.buttons(0))
+        case (.tiles, .up): model.focusBar()
         case (.tiles, .secondary): showDetails(hero)
         case (.buttons(let i), .left): go(.buttons(max(i - 1, 0)))
         case (.buttons(let i), .right): go(.buttons(min(i + 1, 2)))
@@ -432,6 +437,7 @@ private struct TileRow: View {
     let row: VetrinaView.Row
     /// The chosen game, when the chosen tile is in this row.
     let focusedID: UUID?
+    var ring = true
     var buildChip: String? = nil
     let choose: (Game) -> Void
     /// First tile in view, moved by the arrows (one screenful at a time).
@@ -454,7 +460,7 @@ private struct TileRow: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 14) {
                         ForEach(row.games) { game in
-                            Tile(game: game, isFocused: game.id == focusedID) { choose(game) }.id(game.id)
+                            Tile(game: game, isFocused: game.id == focusedID, ring: ring) { choose(game) }.id(game.id)
                         }
                         LibraryTile()
                     }
@@ -509,6 +515,7 @@ private struct Tile: View {
     @Environment(\.platea) private var colors
     let game: Game
     let isFocused: Bool
+    var ring = true
     let choose: () -> Void
 
     /// The chosen game at full size, the others smaller (as in the approved mockup: 14.5 to 11).
@@ -530,8 +537,8 @@ private struct Tile: View {
         .frame(width: width, height: width * 9 / 16)
         .overlay(alignment: .topTrailing) { StatusBadge(game: game) }
         .clipShape(RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(isFocused ? colors.fg : .clear, lineWidth: 2.5).padding(-4))
-        .shadow(color: .black.opacity(isFocused ? 0.45 : 0.25), radius: isFocused ? 14 : 2, y: isFocused ? 10 : 1)
+        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(isFocused && ring ? colors.fg : .clear, lineWidth: 2.5).padding(-4))
+        .shadow(color: .black.opacity(isFocused ? 0 : 0.25), radius: 2, y: 1)
         .contentShape(Rectangle())
         .help(subtitle.isEmpty ? game.title : "\(game.title) · \(subtitle)")
         .onTapGesture(count: 2) { model.open(.game(game.id)) }

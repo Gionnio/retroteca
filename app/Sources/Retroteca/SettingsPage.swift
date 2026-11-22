@@ -90,27 +90,27 @@ private struct GeneralSection: View {
                     }
                 }
                 OptionRow(title: String(localized: "Suoni dell'interfaccia")) {
-                    Toggle("", isOn: $sounds).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $sounds).labelsHidden().toggleStyle(.padSwitch)
                         .onChange(of: sounds) { _, on in if on { InterfaceSound.select.play() } }
                 }
                 OptionRow(title: String(localized: "Salvaschermo"), note: String(localized: "Dopo 5 minuti senza tocchi.")) {
-                    Toggle("", isOn: $screensaver).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $screensaver).labelsHidden().toggleStyle(.padSwitch)
                 }
             }
             OptionCard(title: String(localized: "LIBRERIA")) {
                 OptionRow(title: String(localized: "Copia i giochi importati nella cartella di Retroteca"),
                           note: copyGamesToLibrary ? String(localized: "I giochi nuovi vanno in Retroteca/Games e occupano il doppio.") : String(localized: "Spento: i giochi restano dove sono.")) {
-                    Toggle("", isOn: $copyGamesToLibrary).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $copyGamesToLibrary).labelsHidden().toggleStyle(.padSwitch)
                 }
                 OptionRow(title: String(localized: "Scarica copertine e schermate"), note: String(localized: "Dal negozio Nintendo.")) {
-                    Toggle("", isOn: $downloadArtwork).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $downloadArtwork).labelsHidden().toggleStyle(.padSwitch)
                 }
                 OptionRow(title: String(localized: "Controlla i file dei giochi all'avvio"), note: String(localized: "Segnala i giochi con file spostati o cancellati.")) {
-                    Toggle("", isOn: $checkFilesAtLaunch).labelsHidden().toggleStyle(.switch)
+                    Toggle("", isOn: $checkFilesAtLaunch).labelsHidden().toggleStyle(.padSwitch)
                 }
                 OptionRow(title: String(localized: "Cartella di Retroteca")) {
                     Button(model.libraryLocation.path.replacingOccurrences(of: NSHomeDirectory(), with: "~")) { NSWorkspace.shared.open(model.libraryLocation) }
-                        .buttonStyle(.link).font(.system(size: 12))
+                        .buttonStyle(.padLink).font(.system(size: 12))
                 }
                 OptionRow(title: String(localized: "Svuota la libreria")) {
                     Button(String(localized: "Svuota…")) { confirmEmpty = true }.buttonStyle(PlateaButtonStyle(destructive: true)).controlSize(.small)

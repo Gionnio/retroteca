@@ -28,7 +28,11 @@ enum Page: Hashable {
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var games: [Game] = []
-    @Published var page: Page = .vetrina
+    @Published var page: Page = .vetrina {
+        didSet { if page != oldValue { padFocus.pageChanged() } }
+    }
+    /// The pad's focus on the top bar and on pages without a navigation of their own.
+    let padFocus = PadFocus()
     /// Pages to go back to (game, build, options and space pages).
     private var history: [Page] = []
     /// The game shown in the Vetrina hero (focused tile).
@@ -80,6 +84,7 @@ final class AppModel: ObservableObject {
         }
         games = store.games
         playLog.load()
+        padFocus.currentKey = { [weak self] in self?.page.barKey }
         applyEngineStatus()
         // Views read engine state through the model: forward its changes.
         switchChanges = switchGames.objectWillChange.sink { [weak self] _ in
@@ -138,6 +143,17 @@ final class AppModel: ObservableObject {
     @Published var quickFocus = 0
     @Published private(set) var screensaverOn = false
     private var lastInput = Date()
+
+    /// Up from the top of a page with its own focus (Home, Profile, a game's page): the focus goes to the top bar.
+    func focusBar() { padFocus.focusBar() }
+
+    /// Keys reaching a page with its own focus while the top bar has it: they go to the bar.
+    func barKey(_ command: NavCommand) -> Bool {
+        guard padFocus.inBar else { return false }
+        noteInput()
+        padFocus.handle(command, pageHasFocus: !page.usesPadFocus)
+        return true
+    }
 
     func toggleQuickMenu() {
         quickMenuOpen.toggle()
@@ -330,6 +346,10 @@ final class AppModel: ObservableObject {
             }
             return
         }
+        // The focus is on the top bar: the arrows, A and B belong to it.
+        if padFocus.inBar, padFocus.handle(command, pageHasFocus: !page.usesPadFocus) { return }
+        // Pages without a navigation of their own: the focus moves over their controls.
+        if page.usesPadFocus, !viewerOpen, command != .back, padFocus.handle(command, pageHasFocus: false) { return }
         switch command {
         case .back:
             if viewerOpen { navigation.send(.back) } else if launchingGameID != nil { cancelLaunch() } else if page.isDetail { back() }
@@ -984,6 +1004,25 @@ final class AppModel: ObservableObject {
 }
 
 extension Page {
+    /// Pages whose controls the pad reaches through `PadFocus` (the others move their own focus).
+    var usesPadFocus: Bool {
+        switch self {
+        case .grid, .builds, .build, .options, .settings: return true
+        default: return false
+        }
+    }
+
+    /// The top bar item for this page.
+    var barKey: String? {
+        switch self {
+        case .vetrina, .game: return "vetrina"
+        case .grid: return "grid"
+        case .builds, .build: return "builds"
+        case .settings, .options: return "settings"
+        case .profile: return "profile"
+        }
+    }
+
     var isDetail: Bool {
         switch self {
         case .game, .build, .options, .settings, .profile: return true

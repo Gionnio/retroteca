@@ -27,6 +27,7 @@ struct BackButton: View {
             .buttonStyle(.plain).foregroundStyle(colors.secondary).font(.system(size: 12))
             .keyboardShortcut(.cancelAction)
             .disabled(viewerOpen)
+            .padTarget(radius: 6) { model.back() }
             .padding(.bottom, 14)
     }
 }

@@ -100,20 +100,25 @@ struct GamePageView: View {
             .focusable().focused($focused).focusEffectDisabled()
             .onAppear { focused = true }
             .onKeyPress(.return) {
+                if model.barKey(.select) { return .handled }
                 if let shot = openShot ?? focusedShot { openShot = shot } else { model.primaryAction(for: game) }
                 return .handled
             }
-            .onKeyPress(.leftArrow) { move(-1, in: game) }
-            .onKeyPress(.rightArrow) { move(1, in: game) }
-            .onKeyPress(.downArrow) { move(0, in: game, down: true) }
-            .onKeyPress(.upArrow) { if openShot == nil && focusedShot != nil { focusedShot = nil; return .handled }; return .ignored }
+            .onKeyPress(.leftArrow) { model.barKey(.left) ? .handled : move(-1, in: game) }
+            .onKeyPress(.rightArrow) { model.barKey(.right) ? .handled : move(1, in: game) }
+            .onKeyPress(.downArrow) { model.barKey(.down) ? .handled : move(0, in: game, down: true) }
+            .onKeyPress(.upArrow) {
+                if model.barKey(.up) || openShot != nil { return .handled }
+                if focusedShot != nil { focusedShot = nil } else { model.focusBar() }
+                return .handled
+            }
             .onReceive(model.navigation) { command in
                 switch command {
                 case .back: openShot = nil
                 case .left, .previousPage: _ = move(-1, in: game)
                 case .right, .nextPage: _ = move(1, in: game)
                 case .down: _ = move(0, in: game, down: true)
-                case .up: if openShot == nil { focusedShot = nil }
+                case .up: if openShot == nil { if focusedShot != nil { focusedShot = nil } else { model.focusBar() } }
                 case .select:
                     if let shot = openShot ?? focusedShot { openShot = shot } else { model.primaryAction(for: game) }
                 case .secondary:
@@ -254,6 +259,7 @@ struct ActionTile: View {
             .contentShape(RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
+        .padTarget(radius: 14, action: action)
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.15), value: hovering)
     }

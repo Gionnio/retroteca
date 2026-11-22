@@ -43,7 +43,7 @@ struct OnlineModsCard: View {
                     Spacer()
                     if let gbGame {
                         Button(String(localized: "Pagina su GameBanana")) { NSWorkspace.shared.open(URL(string: "https://gamebanana.com/games/\(gbGame.id)")!) }
-                            .buttonStyle(.link).font(.system(size: 12))
+                            .buttonStyle(.padLink).font(.system(size: 12))
                     }
                 }
                 if let failure {
@@ -79,7 +79,7 @@ struct OnlineModsCard: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.padPlain)
     }
 
     private func modDetail(_ mod: GameBanana.Mod) -> some View {
@@ -88,8 +88,8 @@ struct OnlineModsCard: View {
                 Text(mod.name).font(.system(size: 14, weight: .semibold)).foregroundStyle(colors.fg)
                 if let author = mod.author { Text(String(localized: "di \(author)")).font(.system(size: 12)).foregroundStyle(colors.secondary) }
                 Spacer()
-                Button(String(localized: "Apri la pagina")) { NSWorkspace.shared.open(mod.page) }.buttonStyle(.link).font(.system(size: 12))
-                Button { opened = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain).foregroundStyle(colors.secondary)
+                Button(String(localized: "Apri la pagina")) { NSWorkspace.shared.open(mod.page) }.buttonStyle(.padLink).font(.system(size: 12))
+                Button { opened = nil } label: { Image(systemName: "xmark") }.buttonStyle(.padPlain).foregroundStyle(colors.secondary)
             }
             if files.isEmpty { ProgressView().controlSize(.small) }
             ForEach(files) { file in

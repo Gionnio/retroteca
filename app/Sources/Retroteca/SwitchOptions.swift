@@ -141,6 +141,7 @@ struct Segments: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .padTarget(radius: 5) { choose(option.value) }
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 7))
@@ -193,7 +194,7 @@ private struct SettingsTab: View {
                             Label(showsAdvanced ? String(localized: "Nascondi le avanzate") : String(localized: "Mostra le avanzate"),
                                   systemImage: showsAdvanced ? "chevron.down" : "chevron.right").font(.system(size: 12))
                         }
-                        .buttonStyle(.plain).foregroundStyle(colors.secondary)
+                        .buttonStyle(.padPlain).foregroundStyle(colors.secondary)
                         if showsAdvanced {
                             ForEach(settings.filter { $0.section == "Performance" && $0.isShown(values: values) }) { setting in
                                 settingRow(setting, values: values, fixed: fixed, choices: choices)
@@ -233,7 +234,7 @@ private struct SettingsTab: View {
         switch setting.kind {
         case .toggle:
             Toggle("", isOn: Binding(get: { value == setting.onValue }, set: { set($0 ? setting.onValue : setting.offValue) }))
-                .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                .toggleStyle(.padSwitch).labelsHidden().controlSize(.small)
         case .range:
             let number = Double(value) ?? Double(setting.default) ?? 0
             HStack(spacing: 8) {
@@ -243,6 +244,13 @@ private struct SettingsTab: View {
                     set(Self.format((value / step).rounded() * step, step: setting.step))
                 }), in: (setting.min ?? 0)...(setting.max ?? 1))
                     .frame(width: 150)
+                    // With the pad, A steps up (by a tenth of the range) and starts again from the bottom.
+                    .padTarget(radius: 7) {
+                        let low = setting.min ?? 0, high = setting.max ?? 1
+                        let step = max(setting.step ?? 0, (high - low) / 10)
+                        let next = number + step > high + 0.0001 ? low : min(high, number + step)
+                        set(Self.format((next / (setting.step ?? 0.05)).rounded() * (setting.step ?? 0.05), step: setting.step))
+                    }
                 Text(Self.percent(number, setting: setting)).font(.system(size: 11, design: .monospaced)).foregroundStyle(colors.secondary).frame(width: 42, alignment: .trailing)
             }
         case .choice:
@@ -254,6 +262,7 @@ private struct SettingsTab: View {
                     ForEach(options, id: \.value) { Text($0.label).tag($0.value) }
                 }
                 .labelsHidden().frame(width: 190)
+                .padCycle(options.map(\.value), current: value, set: set)
             }
         }
     }
@@ -351,16 +360,16 @@ private struct ModsTab: View {
                 OptionRow(title: mod.folder, note: note(mod)) {
                     HStack(spacing: 6) {
                         Button { move(mods, from: index, by: -1) } label: { Image(systemName: "chevron.up") }
-                            .buttonStyle(.plain).foregroundStyle(colors.secondary).disabled(index == 0)
+                            .buttonStyle(.padPlain).foregroundStyle(colors.secondary).disabled(index == 0)
                         Button { move(mods, from: index, by: 1) } label: { Image(systemName: "chevron.down") }
-                            .buttonStyle(.plain).foregroundStyle(colors.secondary).disabled(index == mods.count - 1)
+                            .buttonStyle(.padPlain).foregroundStyle(colors.secondary).disabled(index == mods.count - 1)
                         Text("\(index + 1)°").font(.system(size: 11)).foregroundStyle(colors.secondary).frame(width: 24)
                         Toggle("", isOn: Binding(get: { mod.isOn }, set: { on in
                             var updated = mods
                             updated[index].isOn = on
                             save(updated)
-                        })).toggleStyle(.switch).labelsHidden().controlSize(.small)
-                        Button { remove(mod) } label: { Image(systemName: "trash") }.buttonStyle(.plain).foregroundStyle(colors.secondary)
+                        })).toggleStyle(.padSwitch).labelsHidden().controlSize(.small)
+                        Button { remove(mod) } label: { Image(systemName: "trash") }.buttonStyle(.padPlain).foregroundStyle(colors.secondary)
                     }
                 }
             }
@@ -462,7 +471,7 @@ private struct CheatsTab: View {
                 } else {
                     OptionRow(title: String(localized: "Trucchi attivi"), note: String(localized: "Interruttore generale: spento, nessun trucco gira")) {
                         Toggle("", isOn: Binding(get: { cheats.masterOn }, set: { cheats.masterOn = $0; revision += 1 }))
-                            .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                            .toggleStyle(.padSwitch).labelsHidden().controlSize(.small)
                     }
                     ForEach(list.filter { !$0.isMaster }) { cheat in
                         OptionRow(title: cheat.name) {
@@ -471,7 +480,7 @@ private struct CheatsTab: View {
                                 if let i = updated.firstIndex(where: { $0.name == cheat.name }) { updated[i].isOn = on }
                                 try? cheats.save(updated)
                                 revision += 1
-                            })).toggleStyle(.switch).labelsHidden().controlSize(.small)
+                            })).toggleStyle(.padSwitch).labelsHidden().controlSize(.small)
                         }
                     }
                 }
@@ -581,7 +590,7 @@ private struct SavesTab: View {
                                 choices.cloudFolder = nil
                             }
                             revision += 1
-                        })).toggleStyle(.switch).labelsHidden().controlSize(.small)
+                        })).toggleStyle(.padSwitch).labelsHidden().controlSize(.small)
                     }
                 }
             }
@@ -648,7 +657,7 @@ private struct RecommendedCard: View {
                         HStack(spacing: 8) {
                             if let source = tweak.source {
                                 Button { NSWorkspace.shared.open(source) } label: { Image(systemName: "doc.text") }
-                                    .buttonStyle(.plain).foregroundStyle(colors.secondary).help(String(localized: "Da dove viene questo consiglio"))
+                                    .buttonStyle(.padPlain).foregroundStyle(colors.secondary).help(String(localized: "Da dove viene questo consiglio"))
                             }
                             if applied {
                                 PlateaChip(text: "✓ " + valueLabel(tweak), tint: colors.ok)

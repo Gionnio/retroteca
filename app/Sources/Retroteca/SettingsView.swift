@@ -162,6 +162,7 @@ struct ControllerSettings: View {
                 Picker("Comandi di Retroteca", selection: $inputMode) {
                     ForEach(InputMode.allCases) { Text($0.label).tag($0.rawValue) }
                 }
+                .padCycle(InputMode.allCases.map(\.rawValue), current: inputMode) { inputMode = $0 }
                 Text("Il controller agisce solo con Retroteca in primo piano.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -177,6 +178,7 @@ struct ControllerSettings: View {
                             Text("\(pad.name) · \(pad.source == .gameController ? String(localized: "supporto Apple") : String(localized: "HID diretto"))").tag(Optional(pad.id))
                         }
                     }
+                    .padCycle(gamepads.pads.map(\.id), current: selectedPad ?? gamepads.pads.first?.id ?? "") { selectedPad = $0 }
                     if let pad = gamepads.pads.first(where: { $0.id == (selectedPad ?? gamepads.pads.first?.id) }),
                        pad.source == .hid, [0x057E, 0x045E, 0x054C].contains(pad.vendorID ?? 0) {
                         Label("macOS non riconosce questo controller: nei giochi Switch non funziona. Usane uno elencato in Impostazioni di Sistema › Controller di gioco.", systemImage: "exclamationmark.triangle")

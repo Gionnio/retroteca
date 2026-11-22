@@ -169,22 +169,41 @@ struct PlateaChip: View {
 }
 
 /// White "Riproduci"-style button, and the outlined one.
-struct PlateaButtonStyle: ButtonStyle {
-    @Environment(\.platea) private var colors
-    @Environment(\.isEnabled) private var isEnabled
+/// Platea's button. A primitive style so the pad can press it too (`padTarget`).
+struct PlateaButtonStyle: PrimitiveButtonStyle {
     var primary = false
     /// Destructive actions (cancel a build): red text, as in the mockups.
     var destructive = false
 
     func makeBody(configuration: Configuration) -> some View {
+        PlateaButtonBody(configuration: configuration, primary: primary, destructive: destructive)
+    }
+}
+
+private struct PlateaButtonBody: View {
+    @Environment(\.platea) private var colors
+    @Environment(\.isEnabled) private var isEnabled
+    let configuration: PrimitiveButtonStyleConfiguration
+    let primary: Bool
+    let destructive: Bool
+    @State private var pressed = false
+
+    var body: some View {
         configuration.label
             .font(.system(size: 13, weight: .semibold))
             .padding(.horizontal, 18).padding(.vertical, 9)
             .foregroundStyle(primary ? colors.bg : destructive ? Color(red: 1, green: 0.42, blue: 0.42) : colors.fg)
             .background(primary ? colors.fg : Color.clear, in: RoundedRectangle(cornerRadius: 9))
             .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(primary ? .clear : colors.line, lineWidth: 1.5))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
+            .opacity(isEnabled ? (pressed ? 0.75 : 1) : 0.4)
             .contentShape(RoundedRectangle(cornerRadius: 9))
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { _ in if isEnabled { pressed = true } }
+                .onEnded { value in
+                    pressed = false
+                    if isEnabled, abs(value.translation.width) < 12, abs(value.translation.height) < 12 { configuration.trigger() }
+                })
+            .padTarget(radius: 9) { configuration.trigger() }
     }
 }
 
@@ -205,6 +224,7 @@ struct PillButton: View {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        .padTarget(radius: 13, action: action)
     }
 }
 

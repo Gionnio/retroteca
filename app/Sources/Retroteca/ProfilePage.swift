@@ -64,6 +64,8 @@ struct ProfileAvatar: View {
 /// The profile: picture, name and pad on the left; the library's numbers, the most played games, the week and the last games on the right.
 struct ProfilePageView: View {
     @EnvironmentObject var model: AppModel
+    /// The top bar's focus: while it has it, the page's own ring hides.
+    @ObservedObject var pad: PadFocus
     @Environment(\.platea) private var colors
     @AppStorage(Profile.nameKey) private var name = ""
     @AppStorage(Profile.pictureKey) private var picture = ""
@@ -147,7 +149,7 @@ struct ProfilePageView: View {
                     }
             }
             .buttonStyle(.plain)
-            .padFocus(zone == .picture, radius: 75)
+            .padFocus(!pad.inBar && zone == .picture, radius: 75)
             Text(Profile.name(name)).font(.system(size: 32, weight: .bold)).foregroundStyle(colors.fg).lineLimit(1).padding(.top, 6)
             if let since = model.games.map(\.addedAt).min() {
                 Text("Su Retroteca dal \(since.formatted(.dateTime.day().month(.wide).year()))")
@@ -222,7 +224,7 @@ struct ProfilePageView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padFocus(zone == .most(index), radius: 10)
+                .padFocus(!pad.inBar && zone == .most(index), radius: 10)
             }
         }
         .padding(16)
@@ -267,7 +269,7 @@ struct ProfilePageView: View {
                     Button { model.open(.game(game.id)) } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             GameArt(game: game).aspectRatio(16 / 9, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 8))
-                                .padFocus(zone == .recent(index), radius: 8)
+                                .padFocus(!pad.inBar && zone == .recent(index), radius: 8)
                             Text(game.title).font(.system(size: 11.5, weight: .semibold)).foregroundStyle(colors.fg).lineLimit(1)
                             if let last = game.lastPlayedAt {
                                 Text(last.formatted(.dateTime.day().month(.abbreviated))).font(.system(size: 10.5)).foregroundStyle(colors.secondary)
@@ -298,11 +300,13 @@ struct ProfilePageView: View {
 
     private func handle(_ command: NavCommand) -> KeyPress.Result {
         if picking { return .ignored }
+        if model.barKey(command) { return .handled }
         let most = mostPlayed.count, last = recent.count
         func go(_ next: Zone) { if next != zone { InterfaceSound.move.play(); zone = next } else { InterfaceSound.blocked.play() } }
         switch (zone, command) {
         case (.picture, .right): if most > 0 { go(.most(0)) } else if last > 0 { go(.recent(0)) } else { go(zone) }
         case (.picture, .select), (_, .secondary): InterfaceSound.select.play(); picking = true
+        case (.picture, .up), (.most(0), .up), (.recent, .up): model.focusBar()
         case (.most(let i), .up): go(.most(max(i - 1, 0)))
         case (.most(let i), .down): go(.most(min(i + 1, most - 1)))
         case (.most, .left): go(.picture)

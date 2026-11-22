@@ -45,7 +45,7 @@ struct SwitchEngineCard: View {
                             Button(String(localized: "Cosa contiene")) {
                                 NSWorkspace.shared.open(URL(string: "https://github.com/\(channel.repo)/blob/\(channel.branch)/RETROTECA.md")!)
                             }
-                            .buttonStyle(.link).font(.system(size: 12))
+                            .buttonStyle(.padLink).font(.system(size: 12))
                         }
                     }
                 }

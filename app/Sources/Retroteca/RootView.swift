@@ -31,17 +31,17 @@ struct PlateaShell: View {
                 switch model.page {
                 case .grid: LibraryGridView()
                 case .game(let id): GamePageView(gameID: id)
-                case .builds: BuildsPageView()
-                case .build(let id): BuildPageView(gameID: id)
-                case .options(let id): SwitchOptionsView(gameID: id)
-                case .settings(let section): SettingsPageView(section: section)
-                case .profile: ProfilePageView()
-                case .vetrina: VetrinaView()
+                case .builds: BuildsPageView().padPage()
+                case .build(let id): BuildPageView(gameID: id).padPage()
+                case .options(let id): SwitchOptionsView(gameID: id).padPage()
+                case .settings(let section): SettingsPageView(section: section).padPage()
+                case .profile: ProfilePageView(pad: model.padFocus)
+                case .vetrina: VetrinaView(pad: model.padFocus)
                 }
             }
             .ignoresSafeArea()
             if !model.viewerOpen { PlateaNavBar().transition(.opacity) }
-            if !model.viewerOpen, !model.gamepads.pads.isEmpty { HintsBar().frame(maxHeight: .infinity, alignment: .bottom) }
+            if !model.viewerOpen, !model.gamepads.pads.isEmpty { HintsBar(pad: model.padFocus).frame(maxHeight: .infinity, alignment: .bottom) }
             ToastOverlay()
             ReadyNotice().frame(maxWidth: .infinity, alignment: .trailing)
                 .animation(.easeOut(duration: 0.3), value: model.readyNotice)
@@ -118,6 +118,7 @@ struct PlateaNavBar: View {
                     .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.plain).help(String(localized: "Costruzione \(Int(fraction * 100))%"))
+                .padTarget(bar: true, radius: 12) { model.open(.builds) }
             }
             TimelineView(.everyMinute) { context in
                 HStack(spacing: 18) {
@@ -141,6 +142,7 @@ struct PlateaNavBar: View {
                 Image(systemName: "gearshape").frame(width: 30, height: 30).background(colors.card, in: Circle())
             }
             .buttonStyle(.plain).foregroundStyle(colors.fg).help(String(localized: "Impostazioni"))
+            .padTarget(bar: true, key: "settings", radius: 15) { model.showSettings(.general) }
             TimelineView(.everyMinute) { context in
                 Text(context.date.formatted(date: .omitted, time: .shortened)).foregroundStyle(colors.secondary).monospacedDigit()
             }
@@ -149,6 +151,7 @@ struct PlateaNavBar: View {
                     .overlay(Circle().strokeBorder(colors.fg, lineWidth: 2).padding(-3).opacity(model.page == .profile ? 1 : 0))
             }
             .buttonStyle(.plain).help(String(localized: "Profilo"))
+            .padTarget(bar: true, key: "profile", radius: 15) { if model.page != .profile { model.open(.profile) } }
         }
         .font(.system(size: 13))
         .padding(.leading, 48).padding(.trailing, 28)
@@ -174,8 +177,11 @@ struct PlateaNavBar: View {
                     Capsule().fill(colors.fg).frame(height: 2).offset(y: 6).opacity(on ? 1 : 0)
                 }
                 .contentShape(Rectangle())
+                .padding(.horizontal, 6).padding(.vertical, 3)
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, -6).padding(.vertical, -3)
+        .padTarget(bar: true, key: page.barKey, radius: 6) { model.open(page) }
     }
 }
 
@@ -194,15 +200,26 @@ struct PadStatus {
 /// The pad's buttons for the page on screen, along the bottom edge, while a controller is connected.
 struct HintsBar: View {
     @EnvironmentObject var model: AppModel
+    @ObservedObject var pad: PadFocus
     @Environment(\.platea) private var colors
 
     var body: some View {
         HStack(spacing: 22) {
             ForEach(Array(hints.enumerated()), id: \.offset) { _, hint in
                 HStack(spacing: 6) {
-                    Text(hint.0).font(.system(size: 10, weight: .heavy)).foregroundStyle(colors.fg)
-                        .frame(minWidth: 18, minHeight: 18).padding(.horizontal, hint.0.count > 1 ? 4 : 0)
-                        .overlay(RoundedRectangle(cornerRadius: hint.0.count > 1 ? 4 : 9).strokeBorder(colors.secondary, lineWidth: 1.5))
+                    let letters = hint.0.split(separator: " ").map(String.init)
+                    let symbols = letters.compactMap(PadGlyph.symbol(for:))
+                    if symbols.count == letters.count {
+                        // The pad's own symbols (✕ ○ △ on a PlayStation pad, A B Y on an Xbox one…).
+                        HStack(spacing: 3) {
+                            ForEach(symbols, id: \.self) { Image(systemName: $0).font(.system(size: 17)) }
+                        }
+                        .foregroundStyle(colors.fg)
+                    } else {
+                        Text(hint.0).font(.system(size: 10, weight: .heavy)).foregroundStyle(colors.fg)
+                            .frame(minWidth: 18, minHeight: 18).padding(.horizontal, hint.0.count > 1 ? 4 : 0)
+                            .overlay(RoundedRectangle(cornerRadius: hint.0.count > 1 ? 4 : 9).strokeBorder(colors.secondary, lineWidth: 1.5))
+                    }
                     Text(hint.1).font(.system(size: 11.5)).foregroundStyle(colors.secondary)
                 }
             }
@@ -213,8 +230,9 @@ struct HintsBar: View {
     }
 
     private var hints: [(String, String)] {
+        if pad.inBar { return [("A", String(localized: "Scegli")), ("B", String(localized: "Torna alla pagina"))] }
         switch model.page {
-        case .vetrina: return [("A", String(localized: "Gioca")), ("Y", String(localized: "Scheda")), ("L R", String(localized: "Sezioni"))]
+        case .vetrina: return [("A", String(localized: "Scegli")), ("Y", String(localized: "Scheda")), ("L R", String(localized: "Sezioni"))]
         case .grid: return [("A", String(localized: "Apri")), ("L R", String(localized: "Sezioni"))]
         case .builds: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]
         case .settings: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]

@@ -162,7 +162,7 @@ struct SpaceSection: View {
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? colors.accent : colors.line, lineWidth: 1.5))
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.padPlain)
         .disabled(model.buildingGameID != nil || model.moving != nil)
         .padding(.bottom, 6)
     }
@@ -269,7 +269,7 @@ struct SpaceSection: View {
             .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(on ? colors.accent : colors.line, lineWidth: 1.5))
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.padPlain)
     }
 
     private var marginCard: some View {
@@ -280,6 +280,7 @@ struct SpaceSection: View {
                     ForEach(SpaceSettings.keepFreeChoices, id: \.self) { Text("\($0) GB").tag($0) }
                 }
                 .labelsHidden().fixedSize()
+                .padCycle(SpaceSettings.keepFreeChoices, current: keepFree) { keepFree = $0 }
             }
         }
     }
@@ -327,7 +328,7 @@ struct GameSpaceCard: View {
                                                  : String(localized: "Il gioco resta giocabile."))
                         .font(.system(size: 12)).foregroundStyle(colors.secondary).fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button(String(localized: "Tutto lo spazio")) { model.open(.settings(.space)) }.buttonStyle(.link).font(.system(size: 12))
+                    Button(String(localized: "Tutto lo spazio")) { model.open(.settings(.space)) }.buttonStyle(.padLink).font(.system(size: 12))
                 }
                 .padding(.top, 8)
             } else {
@@ -410,7 +411,7 @@ struct FreeSpaceSheet: View {
                 Text(note).font(.system(size: 12)).foregroundStyle(colors.secondary).fixedSize(horizontal: false, vertical: true)
             }
         }
-        .toggleStyle(.checkbox)
+        .toggleStyle(.padCheckbox)
     }
 }
 
@@ -455,7 +456,7 @@ struct DiskPicker: View {
                     .opacity(ok ? 1 : 0.6)
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.padPlain)
             }
             HStack(spacing: 10) {
                 Spacer()

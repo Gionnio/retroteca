@@ -139,7 +139,7 @@ struct BuildPageView: View {
                 Label(showsLog ? String(localized: "Nascondi") : String(localized: "Mostra le ultime righe"), systemImage: showsLog ? "chevron.down" : "chevron.right")
                     .font(.system(size: 12))
             }
-            .buttonStyle(.plain).foregroundStyle(colors.secondary)
+            .buttonStyle(.padPlain).foregroundStyle(colors.secondary)
             if showsLog {
                 VStack(alignment: .leading, spacing: 1) {
                     ForEach(Array(state.log.suffix(10).enumerated()), id: \.offset) { _, line in

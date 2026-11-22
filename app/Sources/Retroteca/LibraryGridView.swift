@@ -8,7 +8,6 @@ struct LibraryGridView: View {
     @AppStorage("gridSort") private var sort = Sort.lastPlayed.rawValue
     @State private var filter = Filter.all
     @State private var platform: String?
-    @State private var focus: Int?
     @State private var gridWidth: CGFloat = 0
     @FocusState private var searching: Bool
 
@@ -45,11 +44,21 @@ struct LibraryGridView: View {
                     Text(model.games.isEmpty ? "La libreria è vuota: trascina qui i tuoi giochi." : "Nessun gioco con questi filtri.")
                         .foregroundStyle(colors.secondary).padding(.top, 40)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 190), spacing: 18)], alignment: .leading, spacing: 22) {
-                        ForEach(Array(games.enumerated()), id: \.element.id) { index, game in
-                            BoxTile(game: game, isFocused: focus == index).id(game.id)
+                    // Every cover exists (not a lazy grid), so the pad can reach the ones below the window too.
+                    let columns = adaptiveColumns(width: gridWidth, minimum: 150, spacing: 18)
+                    let tileWidth = min(190, max(150, (gridWidth - 18 * CGFloat(columns - 1)) / CGFloat(columns)))
+                    VStack(alignment: .leading, spacing: 22) {
+                        ForEach(Array(stride(from: 0, to: games.count, by: columns)), id: \.self) { start in
+                            HStack(alignment: .top, spacing: 18) {
+                                ForEach(games[start..<min(start + columns, games.count)]) { game in
+                                    BoxTile(game: game, isFocused: false)
+                                        .frame(width: tileWidth)
+                                        .padTarget(radius: 10) { model.open(.game(game.id)) }
+                                }
+                            }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(GeometryReader { geo in Color.clear.onAppear { gridWidth = geo.size.width }.onChange(of: geo.size.width) { _, w in gridWidth = w } })
                 }
             }
@@ -60,13 +69,7 @@ struct LibraryGridView: View {
         .fadesUnderTopBar()
         .scrollIndicators(.automatic)
         .onAppear { ArtworkCache.prefetch(model.games.compactMap { $0.coverURL ?? $0.backdropURL }) }
-        .gridNavigation(count: games.count, columns: adaptiveColumns(width: gridWidth, minimum: 150, spacing: 18), focus: $focus) { index in
-            model.open(.game(games[index].id))
-        }
-        .onChange(of: focus) { _, index in
-            if let index, games.indices.contains(index) { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(games[index].id, anchor: .center) } }
-        }
-        .onChange(of: filter) { _, _ in focus = nil }
+        .padPage()
         }
     }
 
@@ -109,6 +112,11 @@ struct LibraryGridView: View {
                 pillLabel((platform.map { model.platformName($0) } ?? String(localized: "Tutte le console")) + " ▾")
             }
             .menuStyle(.button).buttonStyle(.plain).fixedSize()
+            // With the pad, A moves to the next console.
+            .padTarget(radius: 13) {
+                let all = [nil] + model.platformIDs.map { Optional($0) }
+                platform = all[((all.firstIndex(of: platform) ?? 0) + 1) % all.count]
+            }
             }
             Menu {
                 Button("Ultimo avvio") { sort = Sort.lastPlayed.rawValue }
@@ -118,6 +126,11 @@ struct LibraryGridView: View {
                 pillLabel(String(localized: "Ordina: \(sortName)"))
             }
             .menuStyle(.button).buttonStyle(.plain).fixedSize()
+            // With the pad, A moves to the next order.
+            .padTarget(radius: 13) {
+                let all = Sort.allCases
+                sort = all[((all.firstIndex(of: Sort(rawValue: sort) ?? .lastPlayed) ?? 0) + 1) % all.count].rawValue
+            }
         }
     }
 
