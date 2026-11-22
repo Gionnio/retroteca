@@ -293,7 +293,7 @@ struct PadDrawing: View {
             .frame(width: width, alignment: Alignment(horizontal: callout.alignment, vertical: .top))
             let labelX: CGFloat = callout.alignment == .trailing ? callout.label.x * s - width / 2
                 : callout.alignment == .leading ? callout.label.x * s + width / 2 : callout.label.x * s
-            if let button, control.kind != .dpad {
+            if let button, control.kind != .dpad, GamepadNavigator.remappingEnabled {
                 Button { editing = control.id } label: { label.contentShape(Rectangle()) }
                     .buttonStyle(.plain)
                     .position(x: labelX, y: (callout.label.y + 6) * s)

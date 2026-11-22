@@ -193,13 +193,17 @@ struct ControllerSettings: View {
                 let mapping = gamepads.mapping(for: pad)
                 Section("Tasti di \(pad.name)") {
                     PadDrawing(pad: pad).padding(.vertical, 8)
-                    Text("Clicca un tasto per scegliere cosa fa.")
-                        .font(.caption).foregroundStyle(.secondary)
+                    if GamepadNavigator.remappingEnabled {
+                        Text("Clicca un tasto per scegliere cosa fa.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     LabeledContent("Muoviti", value: String(localized: "croce e levetta sinistra"))
                     ForEach(PadAction.allCases, id: \.self) { action in
                         LabeledContent(padActionName(action)) {
                             HStack {
-                                if gamepads.capturing?.padID == pad.id && gamepads.capturing?.action == action {
+                                if !GamepadNavigator.remappingEnabled {
+                                    Text(mapping.buttons[action].map(padButtonName) ?? String(localized: "nessuno")).foregroundStyle(.secondary)
+                                } else if gamepads.capturing?.padID == pad.id && gamepads.capturing?.action == action {
                                     Text("Premi un tasto sul controller…").foregroundStyle(.orange)
                                     Button("Annulla") { gamepads.capturing = nil }
                                 } else {
@@ -209,9 +213,11 @@ struct ControllerSettings: View {
                             }
                         }
                     }
-                    HStack {
-                        Spacer()
-                        Button("Ripristina predefiniti") { gamepads.resetMapping(for: pad) }
+                    if GamepadNavigator.remappingEnabled {
+                        HStack {
+                            Spacer()
+                            Button("Ripristina predefiniti") { gamepads.resetMapping(for: pad) }
+                        }
                     }
                 }
             }

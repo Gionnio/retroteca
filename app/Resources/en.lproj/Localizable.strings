@@ -4,6 +4,7 @@
 "%@ conosce %@" = "%@ knows %@";
 "%@ e %@ cambiano %lld file uguali: vince quella più in alto." = "%@ and %@ change %lld of the same files: the upper one wins.";
 "%@ giocate" = "%@ played";
+"%@ in %lld giorni" = "%1$@ over %2$lld days";
 "%@ installata e attiva." = "%@ installed and on.";
 "%@ liberi · Retroteca" = "%@ free · Retroteca";
 "%@ non collegato" = "%@ not connected";
@@ -37,6 +38,7 @@
 "%lld°" = "%lld.";
 "%lld° in coda" = "#%lld in the queue";
 "(ultima del %@)" = "(latest on %@)";
+"0 min" = "0 min";
 "1 gioco aggiunto." = "1 game added.";
 "1 gioco spostato." = "1 game moved.";
 "1 modifica dopo quella in uso" = "1 change after the one in use";
@@ -60,6 +62,7 @@
 "Altre mod" = "More mods";
 "Analisi del gioco" = "Game survey";
 "Anche l'app del gioco · %@" = "The game's app too · %@";
+"Ancora nessuna partita." = "No games played yet.";
 "Ancora sul Mac." = "Still on the Mac.";
 "Andrà ricostruita per giocare." = "It will need rebuilding to play.";
 "Annulla" = "Cancel";
@@ -73,6 +76,7 @@
 "App trovata sul Mac: per ricostruirla aggiungi il gioco." = "App found on the Mac: add the game to rebuild it.";
 "Applica le consigliate" = "Apply the recommended ones";
 "Apri" = "Open";
+"Apri il gioco" = "Open game";
 "Apri la cartella" = "Open the folder";
 "Apri la pagina" = "Open the page";
 "Apri la pagina Spazio" = "Open the Space page";
@@ -100,6 +104,7 @@
 "Cambia" = "Change";
 "Cambia anche il protocollo del motore: alcuni dati della costruzione potrebbero mancare." = "The engine's protocol changes too: some build details may be missing.";
 "Cambia il codice: non funziona" = "Changes code: won't work";
+"Cambia immagine" = "Change picture";
 "Cambiano gli shader: per avere le novità ogni gioco va ricostruito da capo, anche per ore. Le app già costruite continuano a funzionare." = "The shaders change: to get the new work every game must be rebuilt from scratch, possibly for hours. Apps already built keep working.";
 "Canale" = "Channel";
 "Cancella le cache quando l'app è pronta. Ricostruire richiede più tempo." = "Deletes the caches once the app is ready. Rebuilding takes longer.";
@@ -155,6 +160,7 @@
 "Da giocare" = "Not Played";
 "Da mezz'ora a qualche ora." = "From half an hour to a few hours.";
 "Da sistemare" = "Needs Attention";
+"Dai tuoi giochi, una tua foto, o l'iniziale." = "From your games, a photo of yours, or your initial.";
 "Dal negozio Nintendo." = "From the Nintendo store.";
 "Dettagli" = "Details";
 "Dettagli e opzioni" = "Details and options";
@@ -185,8 +191,10 @@
 "Finestra" = "Window";
 "Fissato nel file env.txt del gioco" = "Set in the game's env.txt";
 "Formato %@: serve APFS." = "%@ format: APFS is needed.";
+"Foto dal Mac" = "Photo from Mac";
 "Frequenza" = "Frame rate";
 "Funziona" = "Works";
+"GIOCATI DI PIÙ" = "MOST PLAYED";
 "GameBanana non risponde: riprova più tardi." = "GameBanana is not answering: try again later.";
 "Generale" = "General";
 "Gioca" = "Play";
@@ -223,6 +231,7 @@
 "Il motore ufficiale più modifiche non ancora integrate, per i Mac M1 e M2. Non provato dagli autori del motore." = "The official engine plus changes not merged yet, for M1 and M2 Macs. Not tested by the engine's authors.";
 "Il salvataggio attuale viene copiato prima di essere sostituito." = "The current save is copied before it is replaced.";
 "Il tuo gioco" = "Your game";
+"Immagine del profilo" = "Profile picture";
 "Importa" = "Import";
 "Importa file di trucchi…" = "Import cheat file…";
 "Importa prod.keys…" = "Import prod.keys…";
@@ -307,7 +316,9 @@
 "Nessuna copia ancora." = "No copies yet.";
 "Nessuna costruzione in corso" = "No build running";
 "Nessuna mod. Aggiungi uno zip o una cartella con romfs." = "No mods. Add a zip or a folder with romfs.";
+"Nessuna partita questa settimana." = "No games played this week.";
 "Niente in coda. Scegli un gioco da costruire nella Libreria." = "Nothing queued. Pick a game to build in the Library.";
+"Nome" = "Name";
 "Non ancora avviata" = "Not started yet";
 "Non più in libreria" = "No longer in the library";
 "Non so ancora quale gioco è: aggiungi il file con l'ID del titolo nel nome." = "Retroteca cannot tell which game this is yet: add the file with the title ID in its name.";
@@ -351,6 +362,7 @@
 "Pronto da giocare" = "Ready to play";
 "Pronto · %@" = "Ready · %@";
 "Pulsante %lld" = "Button %lld";
+"QUESTA SETTIMANA" = "THIS WEEK";
 "Quanto occupa Retroteca" = "What Retroteca uses";
 "Questi giochi sono già in libreria." = "These games are already in the library.";
 "Questi trucchi sono per la build %@, non per questa." = "These cheats are for build %@, not this one.";
@@ -380,6 +392,7 @@
 "SCHERMATE" = "SCREENSHOTS";
 "SPAZIO" = "SPACE";
 "SPAZIO PER COSTRUIRE" = "ROOM TO BUILD";
+"Salva" = "Save";
 "Salvaschermo" = "Screensaver";
 "Salvataggi" = "Saves";
 "Salvataggi e file del gioco restano." = "Saves and game files stay.";
@@ -431,6 +444,7 @@
 "Strumenti da preparare: %@" = "Tools to prepare: %@";
 "Strumenti pronti: %@, Metal, Python, %@" = "Tools ready: %@, Metal, Python, %@";
 "Su GameBanana non c'è una pagina per questo gioco." = "GameBanana has no page for this game.";
+"Su Retroteca dal %@" = "On Retroteca since %@";
 "Sul controller: %@" = "On the controller: %@";
 "Suoni" = "Sounds";
 "Suoni dell'interfaccia" = "Interface sounds";
@@ -461,6 +475,7 @@
 "Tutte le console" = "All Consoles";
 "Tutti" = "All";
 "Tutto lo spazio" = "All space";
+"ULTIME PARTITE" = "RECENTLY PLAYED";
 "Ufficiale" = "Official";
 "Ultima partita %@" = "Last played %@";
 "Ultimo avvio" = "Last Played";
@@ -495,9 +510,11 @@
 "esc" = "esc";
 "exFAT o FAT: serve APFS." = "exFAT or FAT: APFS is needed.";
 "facoltativa" = "optional";
+"giochi avviati" = "games played";
 "gioco base (v0)" = "base game (v0)";
 "iCloud Drive › nxnative Saves" = "iCloud Drive › nxnative Saves";
 "in corso da %@" = "running for %@";
+"in libreria" = "in library";
 "iniziata alle %@" = "started at %@";
 "la versione provata da Retroteca" = "the version Retroteca tested";
 "macOS non riconosce questo controller: nei giochi Switch non funziona. Usane uno elencato in Impostazioni di Sistema › Controller di gioco." = "macOS does not recognise this controller: it will not work in Switch games. Use one listed in System Settings › Game Controllers.";
@@ -509,12 +526,14 @@
 "non provata: può girare peggio" = "not tested: it may run worse";
 "preferito" = "favorite";
 "premi un tasto per provarlo" = "press a button to try it";
+"pronti da giocare" = "ready to play";
 "provata dal motore" = "tested by the engine";
 "reali · il Finder ne conta %@" = "actual · Finder counts %@";
 "spenta" = "off";
 "spenti" = "off";
 "spento" = "off";
 "supporto Apple" = "Apple support";
+"tempo di gioco" = "play time";
 "troppe mod attive insieme" = "too many mods on at once";
 "tutte applicate" = "all applied";
 "ultimo avvio %@" = "last played %@";

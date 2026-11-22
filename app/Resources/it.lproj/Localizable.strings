@@ -4,6 +4,7 @@
 "%@ conosce %@" = "%@ conosce %@";
 "%@ e %@ cambiano %lld file uguali: vince quella più in alto." = "%@ e %@ cambiano %lld file uguali: vince quella più in alto.";
 "%@ giocate" = "%@ giocate";
+"%@ in %lld giorni" = "%@ in %lld giorni";
 "%@ installata e attiva." = "%@ installata e attiva.";
 "%@ liberi · Retroteca" = "%@ liberi · Retroteca";
 "%@ non collegato" = "%@ non collegato";
@@ -37,6 +38,7 @@
 "%lld°" = "%lld°";
 "%lld° in coda" = "%lld° in coda";
 "(ultima del %@)" = "(ultima del %@)";
+"0 min" = "0 min";
 "1 gioco aggiunto." = "1 gioco aggiunto.";
 "1 gioco spostato." = "1 gioco spostato.";
 "1 modifica dopo quella in uso" = "1 modifica dopo quella in uso";
@@ -60,6 +62,7 @@
 "Altre mod" = "Altre mod";
 "Analisi del gioco" = "Analisi del gioco";
 "Anche l'app del gioco · %@" = "Anche l'app del gioco · %@";
+"Ancora nessuna partita." = "Ancora nessuna partita.";
 "Ancora sul Mac." = "Ancora sul Mac.";
 "Andrà ricostruita per giocare." = "Andrà ricostruita per giocare.";
 "Annulla" = "Annulla";
@@ -73,6 +76,7 @@
 "App trovata sul Mac: per ricostruirla aggiungi il gioco." = "App trovata sul Mac: per ricostruirla aggiungi il gioco.";
 "Applica le consigliate" = "Applica le consigliate";
 "Apri" = "Apri";
+"Apri il gioco" = "Apri il gioco";
 "Apri la cartella" = "Apri la cartella";
 "Apri la pagina" = "Apri la pagina";
 "Apri la pagina Spazio" = "Apri la pagina Spazio";
@@ -100,6 +104,7 @@
 "Cambia" = "Cambia";
 "Cambia anche il protocollo del motore: alcuni dati della costruzione potrebbero mancare." = "Cambia anche il protocollo del motore: alcuni dati della costruzione potrebbero mancare.";
 "Cambia il codice: non funziona" = "Cambia il codice: non funziona";
+"Cambia immagine" = "Cambia immagine";
 "Cambiano gli shader: per avere le novità ogni gioco va ricostruito da capo, anche per ore. Le app già costruite continuano a funzionare." = "Cambiano gli shader: per avere le novità ogni gioco va ricostruito da capo, anche per ore. Le app già costruite continuano a funzionare.";
 "Canale" = "Canale";
 "Cancella le cache quando l'app è pronta. Ricostruire richiede più tempo." = "Cancella le cache quando l'app è pronta. Ricostruire richiede più tempo.";
@@ -155,6 +160,7 @@
 "Da giocare" = "Da giocare";
 "Da mezz'ora a qualche ora." = "Da mezz'ora a qualche ora.";
 "Da sistemare" = "Da sistemare";
+"Dai tuoi giochi, una tua foto, o l'iniziale." = "Dai tuoi giochi, una tua foto, o l'iniziale.";
 "Dal negozio Nintendo." = "Dal negozio Nintendo.";
 "Dettagli" = "Dettagli";
 "Dettagli e opzioni" = "Dettagli e opzioni";
@@ -185,8 +191,10 @@
 "Finestra" = "Finestra";
 "Fissato nel file env.txt del gioco" = "Fissato nel file env.txt del gioco";
 "Formato %@: serve APFS." = "Formato %@: serve APFS.";
+"Foto dal Mac" = "Foto dal Mac";
 "Frequenza" = "Frequenza";
 "Funziona" = "Funziona";
+"GIOCATI DI PIÙ" = "GIOCATI DI PIÙ";
 "GameBanana non risponde: riprova più tardi." = "GameBanana non risponde: riprova più tardi.";
 "Generale" = "Generale";
 "Gioca" = "Gioca";
@@ -223,6 +231,7 @@
 "Il motore ufficiale più modifiche non ancora integrate, per i Mac M1 e M2. Non provato dagli autori del motore." = "Il motore ufficiale più modifiche non ancora integrate, per i Mac M1 e M2. Non provato dagli autori del motore.";
 "Il salvataggio attuale viene copiato prima di essere sostituito." = "Il salvataggio attuale viene copiato prima di essere sostituito.";
 "Il tuo gioco" = "Il tuo gioco";
+"Immagine del profilo" = "Immagine del profilo";
 "Importa" = "Importa";
 "Importa file di trucchi…" = "Importa file di trucchi…";
 "Importa prod.keys…" = "Importa prod.keys…";
@@ -307,7 +316,9 @@
 "Nessuna copia ancora." = "Nessuna copia ancora.";
 "Nessuna costruzione in corso" = "Nessuna costruzione in corso";
 "Nessuna mod. Aggiungi uno zip o una cartella con romfs." = "Nessuna mod. Aggiungi uno zip o una cartella con romfs.";
+"Nessuna partita questa settimana." = "Nessuna partita questa settimana.";
 "Niente in coda. Scegli un gioco da costruire nella Libreria." = "Niente in coda. Scegli un gioco da costruire nella Libreria.";
+"Nome" = "Nome";
 "Non ancora avviata" = "Non ancora avviata";
 "Non più in libreria" = "Non più in libreria";
 "Non so ancora quale gioco è: aggiungi il file con l'ID del titolo nel nome." = "Non so ancora quale gioco è: aggiungi il file con l'ID del titolo nel nome.";
@@ -351,6 +362,7 @@
 "Pronto da giocare" = "Pronto da giocare";
 "Pronto · %@" = "Pronto · %@";
 "Pulsante %lld" = "Pulsante %lld";
+"QUESTA SETTIMANA" = "QUESTA SETTIMANA";
 "Quanto occupa Retroteca" = "Quanto occupa Retroteca";
 "Questi giochi sono già in libreria." = "Questi giochi sono già in libreria.";
 "Questi trucchi sono per la build %@, non per questa." = "Questi trucchi sono per la build %@, non per questa.";
@@ -380,6 +392,7 @@
 "SCHERMATE" = "SCHERMATE";
 "SPAZIO" = "SPAZIO";
 "SPAZIO PER COSTRUIRE" = "SPAZIO PER COSTRUIRE";
+"Salva" = "Salva";
 "Salvaschermo" = "Salvaschermo";
 "Salvataggi" = "Salvataggi";
 "Salvataggi e file del gioco restano." = "Salvataggi e file del gioco restano.";
@@ -431,6 +444,7 @@
 "Strumenti da preparare: %@" = "Strumenti da preparare: %@";
 "Strumenti pronti: %@, Metal, Python, %@" = "Strumenti pronti: %@, Metal, Python, %@";
 "Su GameBanana non c'è una pagina per questo gioco." = "Su GameBanana non c'è una pagina per questo gioco.";
+"Su Retroteca dal %@" = "Su Retroteca dal %@";
 "Sul controller: %@" = "Sul controller: %@";
 "Suoni" = "Suoni";
 "Suoni dell'interfaccia" = "Suoni dell'interfaccia";
@@ -461,6 +475,7 @@
 "Tutte le console" = "Tutte le console";
 "Tutti" = "Tutti";
 "Tutto lo spazio" = "Tutto lo spazio";
+"ULTIME PARTITE" = "ULTIME PARTITE";
 "Ufficiale" = "Ufficiale";
 "Ultima partita %@" = "Ultima partita %@";
 "Ultimo avvio" = "Ultimo avvio";
@@ -495,9 +510,11 @@
 "esc" = "esc";
 "exFAT o FAT: serve APFS." = "exFAT o FAT: serve APFS.";
 "facoltativa" = "facoltativa";
+"giochi avviati" = "giochi avviati";
 "gioco base (v0)" = "gioco base (v0)";
 "iCloud Drive › nxnative Saves" = "iCloud Drive › nxnative Saves";
 "in corso da %@" = "in corso da %@";
+"in libreria" = "in libreria";
 "iniziata alle %@" = "iniziata alle %@";
 "la versione provata da Retroteca" = "la versione provata da Retroteca";
 "macOS non riconosce questo controller: nei giochi Switch non funziona. Usane uno elencato in Impostazioni di Sistema › Controller di gioco." = "macOS non riconosce questo controller: nei giochi Switch non funziona. Usane uno elencato in Impostazioni di Sistema › Controller di gioco.";
@@ -509,12 +526,14 @@
 "non provata: può girare peggio" = "non provata: può girare peggio";
 "preferito" = "preferito";
 "premi un tasto per provarlo" = "premi un tasto per provarlo";
+"pronti da giocare" = "pronti da giocare";
 "provata dal motore" = "provata dal motore";
 "reali · il Finder ne conta %@" = "reali · il Finder ne conta %@";
 "spenta" = "spenta";
 "spenti" = "spenti";
 "spento" = "spento";
 "supporto Apple" = "supporto Apple";
+"tempo di gioco" = "tempo di gioco";
 "troppe mod attive insieme" = "troppe mod attive insieme";
 "tutte applicate" = "tutte applicate";
 "ultimo avvio %@" = "ultimo avvio %@";

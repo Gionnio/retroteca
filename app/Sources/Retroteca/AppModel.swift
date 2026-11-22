@@ -20,6 +20,8 @@ enum Page: Hashable {
     case options(UUID)
     /// Full-window settings, one section at a time (General, Engine, Space, Controller).
     case settings(SettingsSection)
+    /// The player's profile: picture, name, play time, the week.
+    case profile
 }
 
 /// State of the main window: library, selection, search, last message.
@@ -52,6 +54,8 @@ final class AppModel: ObservableObject {
     lazy var space = SpaceManager(root: libraryLocation)
     private var gamepadChanges: AnyCancellable?
     private var switchInfoCache: [URL: SwitchFileInfo] = [:]
+    /// Every session played, for the profile's week (only on this Mac).
+    let playLog = PlayLog(fileURL: LibraryStore.defaultDirectory.appendingPathComponent("play-log.json"))
 
     init(store: LibraryStore = LibraryStore(fileURL: LibraryStore.defaultDirectory.appendingPathComponent("library.json")),
          catalog: PlatformCatalog = AppModel.loadCatalog()) {
@@ -75,6 +79,7 @@ final class AppModel: ObservableObject {
             ActivityLog.write("Took \(others.count) entries of other systems out of the library; no file deleted")
         }
         games = store.games
+        playLog.load()
         applyEngineStatus()
         // Views read engine state through the model: forward its changes.
         switchChanges = switchGames.objectWillChange.sink { [weak self] _ in
@@ -153,7 +158,7 @@ final class AppModel: ObservableObject {
     }
 
     enum QuickAction: CaseIterable {
-        case sounds, palette, space, settings, fullScreen, quit
+        case profile, sounds, palette, space, settings, fullScreen, quit
     }
 
     func runQuick(_ action: QuickAction) {
@@ -169,6 +174,7 @@ final class AppModel: ObservableObject {
             let next = all[((all.firstIndex(of: current) ?? 0) + 1) % all.count]
             UserDefaults.standard.set(next.rawValue, forKey: "palette")
             InterfaceSound.move.play()
+        case .profile: quickMenuOpen = false; if page != .profile { open(.profile) }
         case .space: quickMenuOpen = false; showSettings(.space)
         case .settings: quickMenuOpen = false; showSettings(.general)
         case .fullScreen: quickMenuOpen = false; NSApp.keyWindow?.toggleFullScreen(nil)
@@ -377,7 +383,10 @@ final class AppModel: ObservableObject {
                 self.terminationObserver = nil
                 self.runningGameID = nil
                 self.launchingGameID = nil
-                self.store.recordPlay(id: gameID, started: started, ended: Date())
+                let ended = Date()
+                self.store.recordPlay(id: gameID, started: started, ended: ended)
+                self.playLog.record(gameID: gameID, started: started, ended: ended)
+                try? self.playLog.save()
                 self.persist()
                 self.message = String(localized: "Partita salvata nel tempo di gioco.")
             }
@@ -394,6 +403,8 @@ final class AppModel: ObservableObject {
     func remove(_ id: UUID) {
         if let game = games.first(where: { $0.id == id }) { forgetArtworkAndApp(of: game) }
         store.remove(ids: [id])
+        playLog.remove(gameIDs: [id])
+        try? playLog.save()
         if selection == id { selection = nil }
         persist()
         message = String(localized: "Gioco tolto dalla libreria.")
@@ -420,6 +431,8 @@ final class AppModel: ObservableObject {
         let all = store.games
         all.forEach(forgetArtworkAndApp)
         store.remove(ids: Set(all.map(\.id)))
+        playLog.remove(gameIDs: Set(all.map(\.id)))
+        try? playLog.save()
         selection = nil
         heroID = nil
         persist()
@@ -973,7 +986,7 @@ final class AppModel: ObservableObject {
 extension Page {
     var isDetail: Bool {
         switch self {
-        case .game, .build, .options, .settings: return true
+        case .game, .build, .options, .settings, .profile: return true
         default: return false
         }
     }

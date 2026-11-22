@@ -84,7 +84,7 @@ struct GamePageView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 48)
-                    .padding(.top, 52 + 24)
+                    .padding(.top, PageLayout.top)
                 }
                 .fadesUnderTopBar()
                 ScreenshotViewer(title: game.title, shots: game.screenshots ?? [], index: $openShot)

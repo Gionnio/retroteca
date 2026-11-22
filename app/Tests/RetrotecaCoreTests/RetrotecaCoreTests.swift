@@ -661,4 +661,31 @@ final class GamesLocationTests: XCTestCase {
         try fm.removeItem(at: copy.appendingPathComponent("Contents/two"))
         XCTAssertNotEqual(FolderSummary.of(root.appendingPathComponent("A.app")), FolderSummary.of(copy))
     }
+
+    func testPlayLogWeekAndShortSessions() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("playlog-\(UUID()).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Rome")!
+        let today = calendar.date(from: DateComponents(year: 2026, month: 11, day: 22, hour: 21))!
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let old = calendar.date(byAdding: .day, value: -9, to: today)!
+        let game = UUID(), other = UUID()
+        let log = PlayLog(fileURL: url)
+        log.record(gameID: game, started: today, ended: today.addingTimeInterval(1800))
+        log.record(gameID: other, started: today, ended: today.addingTimeInterval(30))  // too short
+        log.record(gameID: other, started: yesterday, ended: yesterday.addingTimeInterval(600))
+        log.record(gameID: game, started: old, ended: old.addingTimeInterval(3600))     // outside the week
+        try log.save()
+        let reloaded = PlayLog(fileURL: url)
+        reloaded.load()
+        XCTAssertEqual(reloaded.sessions.count, 3)
+        let week = reloaded.week(endingOn: today, calendar: calendar)
+        XCTAssertEqual(week.count, 7)
+        XCTAssertEqual(week[6].time, 1800)
+        XCTAssertEqual(week[5].time, 600)
+        XCTAssertEqual(week.reduce(0) { $0 + $1.time }, 2400)
+        reloaded.remove(gameIDs: [other])
+        XCTAssertEqual(reloaded.sessions.count, 2)
+    }
 }

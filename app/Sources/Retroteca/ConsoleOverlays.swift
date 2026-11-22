@@ -88,6 +88,7 @@ struct QuickMenu: View {
 
     private func describe(_ action: AppModel.QuickAction) -> (String, String, String) {
         switch action {
+        case .profile: return ("person.crop.circle", String(localized: "Profilo"), Profile.name(UserDefaults.standard.string(forKey: Profile.nameKey) ?? ""))
         case .sounds: return ("speaker.wave.2", String(localized: "Suoni"), InterfaceSound.isEnabled ? String(localized: "accesi") : String(localized: "spenti"))
         case .palette: return ("circle.lefthalf.filled", String(localized: "Aspetto"), (PlateaPalette(rawValue: palette) ?? .grafite).name)
         case .space: return ("internaldrive", String(localized: "Spazio"), ByteCountFormatter.string(fromByteCount: model.switchGames.freeSpace, countStyle: .file))

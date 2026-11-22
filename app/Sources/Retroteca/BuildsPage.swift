@@ -43,7 +43,7 @@ struct BuildsPageView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 48).padding(.top, 52 + 30).padding(.bottom, 40)
+                .padding(.horizontal, 48).padding(.top, PageLayout.top).padding(.bottom, 40)
             }
             .fadesUnderTopBar()
         }

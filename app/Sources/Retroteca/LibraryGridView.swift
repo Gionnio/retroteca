@@ -54,7 +54,7 @@ struct LibraryGridView: View {
                 }
             }
             .padding(.horizontal, 48)
-            .padding(.top, 52 + 30)
+            .padding(.top, PageLayout.top)
             .padding(.bottom, 40)
         }
         .fadesUnderTopBar()

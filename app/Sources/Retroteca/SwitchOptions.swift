@@ -66,7 +66,7 @@ struct SwitchOptionsView: View {
                         Spacer(minLength: 40)
                     }
                     .frame(maxWidth: 900, alignment: .leading)
-                    .padding(.horizontal, 48).padding(.top, 52 + 24)
+                    .padding(.horizontal, 48).padding(.top, PageLayout.top)
                 }
                 .fadesUnderTopBar()
             }

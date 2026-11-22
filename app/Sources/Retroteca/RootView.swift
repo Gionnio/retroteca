@@ -35,6 +35,7 @@ struct PlateaShell: View {
                 case .build(let id): BuildPageView(gameID: id)
                 case .options(let id): SwitchOptionsView(gameID: id)
                 case .settings(let section): SettingsPageView(section: section)
+                case .profile: ProfilePageView()
                 case .vetrina: VetrinaView()
                 }
             }
@@ -143,14 +144,14 @@ struct PlateaNavBar: View {
             TimelineView(.everyMinute) { context in
                 Text(context.date.formatted(date: .omitted, time: .shortened)).foregroundStyle(colors.secondary).monospacedDigit()
             }
-            Text(String(NSFullUserName().prefix(1)).uppercased())
-                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(LinearGradient(colors: [colors.accent, colors.accent.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
-                .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1.5))
+            Button { if model.page != .profile { model.open(.profile) } } label: {
+                ProfileAvatar(size: 30)
+                    .overlay(Circle().strokeBorder(colors.fg, lineWidth: 2).padding(-3).opacity(model.page == .profile ? 1 : 0))
+            }
+            .buttonStyle(.plain).help(String(localized: "Profilo"))
         }
         .font(.system(size: 13))
-        .padding(.leading, 84).padding(.trailing, 28)
+        .padding(.leading, 48).padding(.trailing, 28)
         .frame(height: 52)
     }
 
@@ -217,6 +218,7 @@ struct HintsBar: View {
         case .grid: return [("A", String(localized: "Apri")), ("L R", String(localized: "Sezioni"))]
         case .builds: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]
         case .settings: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]
+        case .profile: return [("A", String(localized: "Apri il gioco")), ("Y", String(localized: "Cambia immagine")), ("B", String(localized: "Indietro"))]
         default: return [("A", String(localized: "Scegli")), ("B", String(localized: "Indietro"))]
         }
     }

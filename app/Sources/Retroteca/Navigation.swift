@@ -103,8 +103,13 @@ final class GamepadNavigator: ObservableObject {
         }
     }
 
+    /// Choosing what each button does is switched off for now (22/11/2026): every pad uses its default buttons.
+    /// The code and any saved choices stay; set this to true to bring the feature back.
+    static let remappingEnabled = false
+
     func mapping(for pad: ConnectedPad) -> ControllerMapping {
-        profiles.mapping(for: pad.profileKey, fallback: pad.defaultMapping)
+        guard Self.remappingEnabled else { return pad.defaultMapping }
+        return profiles.mapping(for: pad.profileKey, fallback: pad.defaultMapping)
     }
 
     func assign(_ button: PadButton, to action: PadAction, for pad: ConnectedPad) {

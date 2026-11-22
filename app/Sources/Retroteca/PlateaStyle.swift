@@ -216,6 +216,11 @@ func backdropBlurRadius(_ image: NSImage) -> CGFloat {
 }
 
 /// The left and bottom fade over a full-window image, as in Platea.
+/// Space between the top bar and a page's content, the same on every page except the Home.
+enum PageLayout {
+    static let top: CGFloat = 52 + 44
+}
+
 struct BackdropShade: View {
     @Environment(\.platea) private var colors
     var body: some View {
