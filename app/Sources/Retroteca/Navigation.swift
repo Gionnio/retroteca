@@ -16,6 +16,8 @@ enum NavCommand: Equatable {
     case secondary
     /// LB / RB: the pill before or after in the top bar.
     case previousPage, nextPage
+    /// LB / RB on a page with sections of its own (Settings): the section before or after.
+    case previousSection, nextSection
     /// Menu: full screen on and off.
     case menu
 }

@@ -10,6 +10,7 @@ struct LibraryGridView: View {
     @State private var platform: String?
     @State private var focus: Int?
     @State private var gridWidth: CGFloat = 0
+    @FocusState private var searching: Bool
 
     enum Filter: CaseIterable { case all, toPlay, inProgress, favorites, toInstall }
 
@@ -23,7 +24,17 @@ struct LibraryGridView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     Text("Libreria").font(.system(size: 26, weight: .bold)).foregroundStyle(colors.fg)
                     Text("\(games.count) giochi").foregroundStyle(colors.secondary)
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Image(systemName: "magnifyingglass").foregroundStyle(colors.secondary)
+                        TextField(String(localized: "Cerca giochi"), text: $model.searchText).textFieldStyle(.plain).focused($searching).frame(width: 180)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .overlay(Capsule().strokeBorder(colors.line, lineWidth: 1.5))
+                    Button { model.chooseFilesToImport() } label: { Label("Aggiungi giochi", systemImage: "plus") }
+                        .buttonStyle(PlateaButtonStyle())
                 }
+                .background(Button("") { searching = true }.keyboardShortcut("f").opacity(0))
                 filters.padding(.top, 8).padding(.bottom, !model.pendingSwitchFiles.isEmpty ? 6 : 16)
                 if !model.pendingSwitchFiles.isEmpty {
                     Text(String(localized: "\(model.pendingSwitchFiles.count) aggiornamenti o DLC aspettano il loro gioco base."))

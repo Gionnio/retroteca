@@ -51,7 +51,7 @@ private struct LegendItem: View {
 }
 
 /// Settings → Spazio: what Retroteca takes (clones counted once), per game, and the choices about caches.
-struct SpacePageView: View {
+struct SpaceSection: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.platea) private var colors
     @AppStorage(SpaceSettings.modeKey) private var mode = "compact"
@@ -62,13 +62,6 @@ struct SpacePageView: View {
 
     var body: some View {
         let space = model.space
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 0) {
-                BackButton()
-                Kicker(text: String(localized: "Impostazioni"))
-                Text("Spazio").font(.system(size: 34, weight: .bold)).foregroundStyle(colors.fg).padding(.top, 6)
-                Text("I file dei giochi non sono contati.")
-                    .font(.system(size: 13)).foregroundStyle(colors.secondary).padding(.top, 4).padding(.bottom, 18)
                 HStack(alignment: .top, spacing: 20) {
                     VStack(alignment: .leading, spacing: 16) {
                         location(space.report)
@@ -83,10 +76,6 @@ struct SpacePageView: View {
                     }
                     .frame(width: 330)
                 }
-            }
-            .padding(.horizontal, 48).padding(.top, 52 + 30).padding(.bottom, 40)
-        }
-        .fadesUnderTopBar()
         .task { model.space.measure(games: model.games) }
         // A disk plugged in or ejected while the page is open: its card and free space follow.
         .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didMountNotification)) { _ in model.space.measure(games: model.games) }
@@ -338,7 +327,7 @@ struct GameSpaceCard: View {
                                                  : String(localized: "Il gioco resta giocabile."))
                         .font(.system(size: 12)).foregroundStyle(colors.secondary).fixedSize(horizontal: false, vertical: true)
                     Spacer()
-                    Button(String(localized: "Tutto lo spazio")) { model.open(.space) }.buttonStyle(.link).font(.system(size: 12))
+                    Button(String(localized: "Tutto lo spazio")) { model.open(.settings(.space)) }.buttonStyle(.link).font(.system(size: 12))
                 }
                 .padding(.top, 8)
             } else {

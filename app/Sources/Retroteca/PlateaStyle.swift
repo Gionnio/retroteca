@@ -16,6 +16,15 @@ enum PlateaPalette: String, CaseIterable, Identifiable {
         }
     }
 
+    var name: String {
+        switch self {
+        case .grafite: return String(localized: "Grafite")
+        case .giorno: return String(localized: "Giorno")
+        case .notte: return String(localized: "Notte blu")
+        case .auto: return String(localized: "Auto")
+        }
+    }
+
     /// Auto: Giorno from 7 to 19, Notte blu otherwise.
     func resolved(at date: Date = Date()) -> PlateaPalette {
         guard self == .auto else { return self }

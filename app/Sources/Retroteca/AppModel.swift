@@ -12,14 +12,14 @@ enum Page: Hashable {
     case vetrina
     case grid
     case game(UUID)
-    /// The engine that builds the games, its updates and tools.
-    case engines
+    /// The builds: the one running, the queue, the ready and the failed ones.
+    case builds
     /// The build screen of a Switch game.
     case build(UUID)
     /// A Switch game's options: settings, mods, cheats, saves.
     case options(UUID)
-    /// What Retroteca takes on disk, and freeing it.
-    case space
+    /// Full-window settings, one section at a time (General, Engine, Space, Controller).
+    case settings(SettingsSection)
 }
 
 /// State of the main window: library, selection, search, last message.
@@ -77,8 +77,13 @@ final class AppModel: ObservableObject {
         games = store.games
         applyEngineStatus()
         // Views read engine state through the model: forward its changes.
-        switchChanges = switchGames.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+        switchChanges = switchGames.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+            // Tools just got ready, or a setup ended: games waiting in the queue start.
+            DispatchQueue.main.async { if let self, !self.buildQueue.isEmpty { self.startNextBuild() } }
+        }
         switchGames.onBuilt = { [weak self] id, app, state in self?.recordBuild(id, app: app, state: state) }
+        switchGames.onFinished = { [weak self] id, outcome in self?.buildFinished(id, outcome: outcome) }
         switchGames.onProfiles = { [weak self] in self?.organizeSwitchGames() }
         gamepadChanges = gamepads.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
         spaceChanges = space.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
@@ -120,6 +125,11 @@ final class AppModel: ObservableObject {
         if page.isDetail { history.append(self.page) } else { history.removeAll() }
         if case .game(let id) = page { selection = id }
         self.page = page
+    }
+
+    /// Settings: another section replaces the one on screen (Back still leaves Settings).
+    func showSettings(_ section: SettingsSection) {
+        if case .settings = page { InterfaceSound.page.play(); page = .settings(section) } else { open(.settings(section)) }
     }
 
     func back() {
@@ -241,7 +251,7 @@ final class AppModel: ObservableObject {
     @Published var viewerOpen = false
 
     /// Pills of the top bar, in order: LB and RB walk through them.
-    private var topPages: [Page] { [.vetrina, .grid, .engines] }
+    private var topPages: [Page] { [.vetrina, .grid, .builds] }
 
     /// A command from a controller (or a key the pages leave to the app): global ones here, the rest to the page on screen.
     func navigate(_ command: NavCommand) {
@@ -251,6 +261,7 @@ final class AppModel: ObservableObject {
         case .previousPage, .nextPage:
             // A screenshot open over the page: L and R walk the screenshots instead of the pills.
             if viewerOpen { navigation.send(command); return }
+            if case .settings = page { navigation.send(command == .nextPage ? .nextSection : .previousSection); return }
             let current = topPages.firstIndex(of: page) ?? 0
             let next = (current + (command == .nextPage ? 1 : -1) + topPages.count) % topPages.count
             open(topPages[next])
@@ -669,9 +680,101 @@ final class AppModel: ObservableObject {
     /// The build running now.
     var buildingGameID: UUID? { switchGames.buildingID }
 
-    func buildSwitchGame(_ game: Game) {
-        switchGames.build(game, package: switchBuildVersion(of: game))
-        if switchGames.buildingID == game.id { open(.build(game.id)) }
+    func buildSwitchGame(_ game: Game) { queueBuild(game) }
+
+    // MARK: Build queue (one build at a time, the others wait their turn, like downloads on a console)
+
+    struct BuildRecord: Identifiable {
+        let id = UUID()
+        let gameID: UUID
+        let date: Date
+        let duration: TimeInterval
+        let outcome: SwitchManager.BuildOutcome
+    }
+
+    @Published private(set) var buildQueue: [UUID] = []
+    @Published private(set) var pausedBuilds: Set<UUID> = []
+    @Published private(set) var buildHistory: [BuildRecord] = []
+    /// The game that just became ready: the notice in the top corner.
+    @Published private(set) var readyNotice: UUID?
+    private var pausing: UUID?
+
+    /// Builds now, or puts the game in the queue (at the front with `first`).
+    func queueBuild(_ game: Game, first: Bool = false) {
+        pausedBuilds.remove(game.id)
+        guard switchGames.buildingID != game.id else { return }
+        buildQueue.removeAll { $0 == game.id }
+        if first { buildQueue.insert(game.id, at: 0) } else { buildQueue.append(game.id) }
+        startNextBuild()
+        if let position = buildQueue.firstIndex(of: game.id) {
+            InterfaceSound.select.play()
+            message = String(localized: "\(game.title): in coda, \(position + 2)°")
+        }
+    }
+
+    func startNextBuild() {
+        guard switchGames.buildingID == nil, !switchGames.isBusy, switchGames.toolchain?.isReady == true else { return }
+        while let id = buildQueue.first {
+            buildQueue.removeFirst()
+            guard let game = game(id: id) else { continue }
+            switchGames.build(game, package: switchBuildVersion(of: game))
+            if switchGames.buildingID == id { return }
+            // It could not start (files missing, no room): it goes with the failed ones.
+            buildHistory.insert(BuildRecord(gameID: id, date: Date(), duration: 0,
+                                            outcome: .failed(switchGames.buildErrors[id] ?? String(localized: "Non è partita."))), at: 0)
+        }
+    }
+
+    func pauseBuild(_ game: Game) {
+        guard switchGames.buildingID == game.id else { return }
+        pausing = game.id
+        switchGames.cancel()
+    }
+
+    func resumeBuild(_ game: Game) { queueBuild(game, first: true) }
+
+    func removeFromQueue(_ id: UUID) {
+        buildQueue.removeAll { $0 == id }
+        pausedBuilds.remove(id)
+    }
+
+    func moveToFront(_ id: UUID) {
+        guard buildQueue.contains(id) else { return }
+        buildQueue.removeAll { $0 == id }
+        buildQueue.insert(id, at: 0)
+    }
+
+    /// Where a game stands in the build line, for tiles and buttons.
+    enum BuildStage: Equatable {
+        case none
+        case queued(Int)
+        case building(Double)
+        case paused(Double)
+    }
+
+    func buildStage(_ game: Game) -> BuildStage {
+        if switchGames.buildingID == game.id { return .building(switchGames.builds[game.id]?.overallFraction ?? 0) }
+        if let index = buildQueue.firstIndex(of: game.id) { return .queued(index + 2) }
+        if pausedBuilds.contains(game.id) { return .paused(switchGames.builds[game.id]?.overallFraction ?? 0) }
+        return .none
+    }
+
+    private func buildFinished(_ id: UUID, outcome: SwitchManager.BuildOutcome) {
+        let started = switchGames.buildStarted[id] ?? Date()
+        if outcome == .cancelled, pausing == id {
+            pausedBuilds.insert(id)
+            switchGames.clearError(id)
+        } else {
+            buildHistory.insert(BuildRecord(gameID: id, date: Date(), duration: Date().timeIntervalSince(started), outcome: outcome), at: 0)
+            if buildHistory.count > 20 { buildHistory.removeLast(buildHistory.count - 20) }
+        }
+        pausing = nil
+        if outcome == .built {
+            readyNotice = id
+            InterfaceSound.launch.play()
+            Task { try? await Task.sleep(nanoseconds: 7_000_000_000); if readyNotice == id { readyNotice = nil } }
+        }
+        startNextBuild()
     }
 
     private func recordBuild(_ id: UUID, app: URL, state: NXBuildState) {
@@ -801,7 +904,7 @@ final class AppModel: ObservableObject {
 extension Page {
     var isDetail: Bool {
         switch self {
-        case .game, .build, .options, .space: return true
+        case .game, .build, .options, .settings: return true
         default: return false
         }
     }

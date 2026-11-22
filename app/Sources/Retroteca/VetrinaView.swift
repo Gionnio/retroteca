@@ -32,7 +32,7 @@ struct VetrinaView: View {
             }
             .animation(.easeInOut(duration: 0.25), value: hero?.id)
             BackdropShade().ignoresSafeArea()
-            // As in Platea: the hero stays put, only the rows scroll, following the focused tile.
+            // Gioco branch: the picture fills the screen, the hero sits at the top, the games in one row at the bottom.
             VStack(alignment: .leading, spacing: 0) {
                 Group {
                     if let hero {
@@ -42,29 +42,16 @@ struct VetrinaView: View {
                     }
                 }
                 .padding(.horizontal, 48)
-                .padding(.top, 52 + 36)
-                ScrollViewReader { proxy in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(rows) { row in
-                                TileRow(row: row, focusedID: hero.flatMap { activeRow(rows, hero: $0) == row.id ? $0.id : nil }) { game in
-                                    focusRow = row.id
-                                    withAnimation(.easeOut(duration: 0.15)) { model.heroID = game.id }
-                                }
-                                .id(row.id)
-                            }
-                            Spacer(minLength: 40)
-                        }
-                        .padding(.horizontal, 48)
+                .padding(.top, 52 + 56)
+                Spacer(minLength: 20)
+                if let row = rows.first {
+                    TileRow(row: row, focusedID: hero?.id, buildChip: buildChip) { game in
+                        focusRow = row.id
+                        withAnimation(.easeOut(duration: 0.15)) { model.heroID = game.id }
                     }
-                    .onChange(of: scrollTarget) { _, id in
-                        guard let id else { return }
-                        // Only as far as needed to show the row.
-                        withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(id) }
-                        scrollTarget = nil
-                    }
+                    .padding(.horizontal, 48)
+                    .padding(.bottom, 54)
                 }
-                .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.06)], startPoint: .top, endPoint: .bottom))
             }
         }
         .focusable()
@@ -104,20 +91,29 @@ struct VetrinaView: View {
 
     // MARK: Rows
 
+    /// One row, like a console's home: the games played last first, then the ones ready, then the rest.
     private func makeRows() -> [Row] {
         let games = model.games
-        var rows: [Row] = []
-        let played = games.filter { $0.lastPlayedAt != nil }.sorted { ($0.lastPlayedAt ?? .distantPast) > ($1.lastPlayedAt ?? .distantPast) }
-        if !played.isEmpty { rows.append(Row(id: "played", title: String(localized: "Continua a giocare"), games: played)) }
-        let fresh = games.filter { $0.status == .ready && $0.lastPlayedAt == nil }.sorted { $0.addedAt > $1.addedAt }
-        if !fresh.isEmpty { rows.append(Row(id: "fresh", title: String(localized: "Pronti da giocare"), games: fresh)) }
-        let favorites = games.filter(\.isFavorite)
-        if !favorites.isEmpty { rows.append(Row(id: "favorites", title: String(localized: "Preferiti"), games: favorites)) }
-        let built = games.filter { $0.nativeApp != nil }.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
-        if built.count > played.count { rows.append(Row(id: "built", title: String(localized: "Tutti i giochi costruiti"), games: built)) }
-        let toFix = games.filter { $0.status != .ready }
-        if !toFix.isEmpty { rows.append(Row(id: "fix", title: String(localized: "Da sistemare"), games: toFix)) }
-        return rows
+        guard !games.isEmpty else { return [] }
+        let ordered = games.sorted { a, b in
+            switch (a.lastPlayedAt, b.lastPlayedAt) {
+            case let (x?, y?): return x > y
+            case (.some, nil): return true
+            case (nil, .some): return false
+            default:
+                if (a.nativeApp != nil) != (b.nativeApp != nil) { return a.nativeApp != nil }
+                return a.addedAt > b.addedAt
+            }
+        }
+        let title = ordered.first?.lastPlayedAt != nil ? String(localized: "Continua a giocare") : String(localized: "I tuoi giochi")
+        return [Row(id: "home", title: title, games: ordered)]
+    }
+
+    /// "● Pokopia · costruzione 62%" next to the row's title while a build runs.
+    private var buildChip: String? {
+        guard let id = model.switchGames.buildingID, let game = model.game(id: id) else { return nil }
+        let fraction = model.switchGames.builds[id]?.overallFraction ?? 0
+        return String(localized: "\(game.title) · costruzione \(Int(fraction * 100))%")
     }
 
     private func heroGame(_ rows: [Row]) -> Game? {
@@ -290,6 +286,7 @@ private struct TileRow: View {
     let row: VetrinaView.Row
     /// The chosen game, when the chosen tile is in this row.
     let focusedID: UUID?
+    var buildChip: String? = nil
     let choose: (Game) -> Void
     /// First tile in view, moved by the arrows (one screenful at a time).
     @State private var start = 0
@@ -301,13 +298,19 @@ private struct TileRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(row.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(colors.fg)
+            HStack(spacing: 10) {
+                Text(row.title).font(.system(size: 15, weight: .semibold)).foregroundStyle(colors.fg)
+                if let buildChip {
+                    Button { model.open(.builds) } label: { PlateaChip(text: "● " + buildChip, tint: colors.warning) }.buttonStyle(.plain)
+                }
+            }
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
                         ForEach(row.games) { game in
                             Tile(game: game, isFocused: game.id == focusedID) { choose(game) }.id(game.id)
                         }
+                        LibraryTile()
                     }
                     .padding(.vertical, 12).padding(.horizontal, 10)
                 }
@@ -333,7 +336,6 @@ private struct TileRow: View {
                 }
             }
         }
-        .padding(.top, 22)
     }
 
     private func page(_ direction: Int, _ proxy: ScrollViewProxy) {
@@ -375,6 +377,8 @@ private struct Tile: View {
                         .lineLimit(2).padding(10)
                 }
             }
+            .saturation(dimmed ? 0.25 : 1).brightness(dimmed ? -0.15 : 0)
+            .overlay { BuildOverlay(game: game) }
             .frame(width: 210, height: 118)
             .overlay(alignment: .topTrailing) { StatusBadge(game: game) }
             .clipShape(RoundedRectangle(cornerRadius: 9))
@@ -390,6 +394,12 @@ private struct Tile: View {
         .onTapGesture(count: 2) { model.open(.game(game.id)) }
         .onTapGesture { choose() }
         .animation(.easeOut(duration: 0.18), value: isFocused)
+    }
+
+    /// A game without its app yet looks switched off, like one not downloaded on a console.
+    private var dimmed: Bool {
+        if case .building = model.buildStage(game) { return false }
+        return game.nativeApp == nil
     }
 
     private var subtitle: String {
@@ -415,11 +425,78 @@ private struct WelcomeHero: View {
             HStack(spacing: 10) {
                 Button { model.chooseFilesToImport() } label: { Label("Aggiungi giochi…", systemImage: "plus") }
                     .buttonStyle(PlateaButtonStyle(primary: true))
-                Button("Motori") { model.open(.engines) }
+                Button("Impostazioni") { model.open(.settings(.general)) }
                     .buttonStyle(PlateaButtonStyle())
             }
             .padding(.top, 16)
         }
         .frame(minHeight: 270, alignment: .top)
+    }
+}
+
+/// What a tile shows of the build line: queued, building (bar and %), paused, or "to build".
+struct BuildOverlay: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.platea) private var colors
+    let game: Game
+
+    var body: some View {
+        switch model.buildStage(game) {
+        case .building(let fraction):
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.25)
+                Text("\(Int(fraction * 100))%").font(.system(size: 18, weight: .heavy)).foregroundStyle(.white)
+                    .shadow(color: .black.opacity(0.6), radius: 4).frame(maxHeight: .infinity)
+                bar(fraction, colors.accent)
+            }
+        case .queued(let position):
+            ZStack {
+                Color.black.opacity(0.45)
+                Text("In coda · \(position)°").font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+            }
+        case .paused(let fraction):
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.45)
+                Label("\(Int(fraction * 100))%", systemImage: "pause.fill").font(.system(size: 13, weight: .bold)).foregroundStyle(.white).frame(maxHeight: .infinity)
+                bar(fraction, .white.opacity(0.6))
+            }
+        case .none:
+            if game.nativeApp == nil {
+                Text("Da costruire").font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 8).padding(.vertical, 3).background(.black.opacity(0.55), in: Capsule())
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading).padding(8)
+            }
+        }
+    }
+
+    private func bar(_ fraction: Double, _ color: Color) -> some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.25))
+                Capsule().fill(color).frame(width: geo.size.width * fraction)
+            }
+        }
+        .frame(height: 5).padding(.horizontal, 10).padding(.bottom, 9)
+    }
+}
+
+/// The last tile of the home row: the whole library.
+private struct LibraryTile: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.platea) private var colors
+
+    var body: some View {
+        Button { model.open(.grid) } label: {
+            VStack(spacing: 6) {
+                Image(systemName: "square.grid.2x2").font(.system(size: 22))
+                Text("Libreria").font(.system(size: 13, weight: .semibold))
+            }
+            .foregroundStyle(colors.secondary)
+            .frame(width: 210, height: 118)
+            .background(colors.card, in: RoundedRectangle(cornerRadius: 9))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(colors.line, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])))
+        }
+        .buttonStyle(.plain)
+        .padding(.bottom, 34)
     }
 }

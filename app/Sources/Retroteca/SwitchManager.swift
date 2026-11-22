@@ -24,6 +24,14 @@ final class SwitchManager: ObservableObject {
 
     /// Called when a build made an app: the library records it.
     var onBuilt: ((UUID, URL, NXBuildState) -> Void)?
+    /// Called when a build ends, however it ended (the queue starts the next one).
+    var onFinished: ((UUID, BuildOutcome) -> Void)?
+
+    enum BuildOutcome: Equatable {
+        case built
+        case cancelled
+        case failed(String)
+    }
     /// Called when the engine's game profiles were (re)loaded.
     var onProfiles: (() -> Void)?
 
@@ -408,6 +416,9 @@ final class SwitchManager: ObservableObject {
         DiskSpace.free(at: GamesLocation.volume ?? FileManager.default.homeDirectoryForCurrentUser)
     }
 
+    /// A paused build is not an error.
+    func clearError(_ gameID: UUID) { buildErrors[gameID] = nil }
+
     func cancel() {
         guard let process, process.isRunning else { return }
         cancelled = true
@@ -557,12 +568,14 @@ final class SwitchManager: ObservableObject {
                 }
             }
             onBuilt?(gameID, output, state)
+            onFinished?(gameID, .built)
             return
         }
         // 130 interrupted, 143 stopped by SIGTERM (a cancel), 129 its terminal closed.
         if cancelled || [129, 130, 143].contains(status) {
             buildErrors[gameID] = String(localized: "Costruzione annullata.")
             ActivityLog.write("Build of \(game.title) cancelled")
+            onFinished?(gameID, .cancelled)
             return
         }
         if language != nil, NXBuildCommand.failedOnLanguage(state) {
@@ -574,6 +587,7 @@ final class SwitchManager: ObservableObject {
         buildErrors[gameID] = reason
         BuildNotifier.post(title: String(localized: "\(game.title): costruzione interrotta"), body: reason)
         ActivityLog.write("Build of \(game.title) failed (\(status)): \(reason)")
+        onFinished?(gameID, .failed(reason))
     }
 
     func logURL(for game: Game) -> URL? {

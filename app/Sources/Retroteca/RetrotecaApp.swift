@@ -20,18 +20,16 @@ struct RetrotecaApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("Informazioni su Retroteca") { openWindow(id: "about") }
             }
+            CommandGroup(replacing: .appSettings) {
+                Button("Impostazioni…") { model.showSettings(.general) }
+                    .keyboardShortcut(",")
+            }
             CommandGroup(replacing: .newItem) {
                 Button("Aggiungi giochi…") { model.chooseFilesToImport() }
                     .keyboardShortcut("o")
                 Button("Ricontrolla i file") { model.refreshFiles() }
                     .keyboardShortcut("r")
             }
-        }
-
-        Settings {
-            SettingsView()
-                .environmentObject(model)
-                .preferredColorScheme(scheme)
         }
 
         Window("Informazioni su Retroteca", id: "about") {

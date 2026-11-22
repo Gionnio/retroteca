@@ -1,4 +1,5 @@
 import SwiftUI
+import GameController
 import UniformTypeIdentifiers
 import RetrotecaCore
 
@@ -30,15 +31,16 @@ struct PlateaShell: View {
                 switch model.page {
                 case .grid: LibraryGridView()
                 case .game(let id): GamePageView(gameID: id)
-                case .engines: EnginesPageView()
+                case .builds: BuildsPageView()
                 case .build(let id): BuildPageView(gameID: id)
                 case .options(let id): SwitchOptionsView(gameID: id)
-                case .space: SpacePageView()
+                case .settings(let section): SettingsPageView(section: section)
                 case .vetrina: VetrinaView()
                 }
             }
             .ignoresSafeArea()
             if !model.viewerOpen { PlateaNavBar().transition(.opacity) }
+            if !model.viewerOpen, !model.gamepads.pads.isEmpty { HintsBar().frame(maxHeight: .infinity, alignment: .bottom) }
             ToastOverlay()
             if let id = model.launchingGameID, let game = model.game(id: id) {
                 LaunchOverlay(game: game).zIndex(10)
@@ -74,79 +76,134 @@ struct TransparentTitleBar: ViewModifier {
     }
 }
 
-/// Platea client navigation: logo, pills, search, clock, settings.
+/// The top bar of the Gioco branch: name and sections on one line; on the right the build running, free space,
+/// the pad, the settings gear, the clock and the user.
 struct PlateaNavBar: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.platea) private var colors
-    @State private var showSearch = false
-    @FocusState private var searchFocused: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 22) {
             HStack(spacing: 8) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 24, height: 24)
                 Text("Retroteca").font(.system(size: 15, weight: .bold))
             }
             .foregroundStyle(colors.fg)
-            .padding(.trailing, 10)
-
-            pill("Home", on: model.page == .vetrina) { model.open(.vetrina) }
-            pill("Libreria", count: model.games.count, on: model.page == .grid) { model.open(.grid) }
-            pill("Motore", on: model.page == .engines) { model.open(.engines) }
-
+            section("Giochi", page: .vetrina)
+            section("Libreria", page: .grid)
+            section("Costruzioni", page: .builds)
             Spacer()
-            Button { model.chooseFilesToImport() } label: { Image(systemName: "plus") }
-                .buttonStyle(.plain).foregroundStyle(colors.secondary)
-                .help("Aggiungi giochi")
-            if showSearch || !model.searchText.isEmpty {
-                TextField(searchPrompt, text: $model.searchText)
-                    .textFieldStyle(.plain)
-                    .focused($searchFocused)
-                    .frame(width: 200)
-                    .padding(.horizontal, 12).padding(.vertical, 5)
-                    .overlay(Capsule().strokeBorder(colors.line, lineWidth: 1.5))
-                    .onSubmit { if model.page == .vetrina { model.open(.grid) } }
-                    .onChange(of: model.searchText) { _, text in if !text.isEmpty && model.page == .vetrina { model.open(.grid) } }
+            if let id = model.switchGames.buildingID {
+                let fraction = model.switchGames.builds[id]?.overallFraction ?? 0
+                Button { model.open(.builds) } label: {
+                    ZStack {
+                        Circle().stroke(colors.fg.opacity(0.18), lineWidth: 3)
+                        Circle().trim(from: 0, to: max(0.02, fraction)).stroke(colors.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round)).rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.plain).help(String(localized: "Costruzione \(Int(fraction * 100))%"))
             }
-            Button {
-                showSearch.toggle()
-                searchFocused = showSearch
-                if !showSearch { model.searchText = "" }
-            } label: { Image(systemName: "magnifyingglass") }
-            .buttonStyle(.plain).foregroundStyle(colors.secondary)
-            .keyboardShortcut("f")
             TimelineView(.everyMinute) { context in
-                Text(context.date.formatted(date: .omitted, time: .shortened))
-                    .foregroundStyle(colors.secondary).monospacedDigit()
+                HStack(spacing: 18) {
+                    if !GamesLocation.isAvailable, let disk = GamesLocation.volume?.lastPathComponent {
+                        Label(String(localized: "\(disk) non collegato"), systemImage: "externaldrive.badge.xmark")
+                    } else {
+                        Text("Spazio \(ByteCountFormatter.string(fromByteCount: model.switchGames.freeSpace, countStyle: .file))")
+                    }
+                    if let pad = PadStatus.current {
+                        HStack(spacing: 5) {
+                            Image(systemName: "gamecontroller.fill")
+                            if let level = pad.battery { Text("\(Int(level * 100))%").monospacedDigit() }
+                        }
+                        .help(pad.name)
+                    }
+                }
+                .foregroundStyle(colors.secondary)
+                .id(context.date)
             }
-            SettingsLink {
+            Button { model.showSettings(.general) } label: {
                 Image(systemName: "gearshape").frame(width: 30, height: 30).background(colors.card, in: Circle())
             }
-            .buttonStyle(.plain).foregroundStyle(colors.fg)
+            .buttonStyle(.plain).foregroundStyle(colors.fg).help(String(localized: "Impostazioni"))
+            TimelineView(.everyMinute) { context in
+                Text(context.date.formatted(date: .omitted, time: .shortened)).foregroundStyle(colors.secondary).monospacedDigit()
+            }
+            Text(String(NSFullUserName().prefix(1)).uppercased())
+                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(LinearGradient(colors: [colors.accent, colors.accent.opacity(0.55)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1.5))
         }
         .font(.system(size: 13))
         .padding(.leading, 84).padding(.trailing, 28)
         .frame(height: 52)
     }
 
-    private var searchPrompt: String {
-        String(localized: "Cerca giochi")
+    private func isOn(_ page: Page) -> Bool {
+        switch (page, model.page) {
+        case (.vetrina, .vetrina), (.grid, .grid), (.builds, .builds): return true
+        case (.builds, .build): return true
+        default: return false
+        }
     }
 
-
-
-    private func pill(_ title: LocalizedStringKey, count: Int? = nil, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Text(title)
-                if let count { Text("\(count)").font(.system(size: 11)).opacity(0.55).monospacedDigit() }
-            }
-                .foregroundStyle(colors.fg)
-                .opacity(on ? 1 : 0.85)
-                .padding(.horizontal, 13).padding(.vertical, 5)
-                .overlay(Capsule().strokeBorder(on ? colors.accent : .clear, lineWidth: 1.5))
-                .contentShape(Capsule())
+    /// A section name with a line under it when on screen; the line does not move the text.
+    private func section(_ title: LocalizedStringKey, page: Page) -> some View {
+        let on = isOn(page)
+        return Button { model.open(page) } label: {
+            Text(title)
+                .font(.system(size: 14, weight: on ? .semibold : .regular))
+                .foregroundStyle(on ? colors.fg : colors.secondary)
+                .overlay(alignment: .bottom) {
+                    Capsule().fill(colors.fg).frame(height: 2).offset(y: 6).opacity(on ? 1 : 0)
+                }
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The first controller macOS lists, with its battery when it reports one.
+struct PadStatus {
+    let name: String
+    let battery: Float?
+
+    static var current: PadStatus? {
+        guard let controller = GCController.controllers().first else { return nil }
+        let level = controller.battery.map(\.batteryLevel).flatMap { $0 > 0 ? $0 : nil }
+        return PadStatus(name: controller.vendorName ?? String(localized: "Pad"), battery: level)
+    }
+}
+
+/// The pad's buttons for the page on screen, along the bottom edge, while a controller is connected.
+struct HintsBar: View {
+    @EnvironmentObject var model: AppModel
+    @Environment(\.platea) private var colors
+
+    var body: some View {
+        HStack(spacing: 22) {
+            ForEach(Array(hints.enumerated()), id: \.offset) { _, hint in
+                HStack(spacing: 6) {
+                    Text(hint.0).font(.system(size: 10, weight: .heavy)).foregroundStyle(colors.fg)
+                        .frame(minWidth: 18, minHeight: 18).padding(.horizontal, hint.0.count > 1 ? 4 : 0)
+                        .overlay(RoundedRectangle(cornerRadius: hint.0.count > 1 ? 4 : 9).strokeBorder(colors.secondary, lineWidth: 1.5))
+                    Text(hint.1).font(.system(size: 11.5)).foregroundStyle(colors.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 48).padding(.vertical, 12)
+        .allowsHitTesting(false)
+    }
+
+    private var hints: [(String, String)] {
+        switch model.page {
+        case .vetrina: return [("A", String(localized: "Gioca")), ("Y", String(localized: "Scheda")), ("L R", String(localized: "Sezioni"))]
+        case .grid: return [("A", String(localized: "Apri")), ("L R", String(localized: "Sezioni"))]
+        case .builds: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]
+        case .settings: return [("B", String(localized: "Indietro")), ("L R", String(localized: "Sezioni"))]
+        default: return [("A", String(localized: "Scegli")), ("B", String(localized: "Indietro"))]
+        }
     }
 }

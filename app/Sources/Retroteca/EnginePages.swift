@@ -1,27 +1,6 @@
 import SwiftUI
 import RetrotecaCore
 
-/// The engine page: the engine that turns the user's games into Mac apps, its updates and tools.
-struct EnginesPageView: View {
-    @EnvironmentObject var model: AppModel
-    @Environment(\.platea) private var colors
-
-    var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 0) {
-                PageTitle(title: String(localized: "Motore"), detail: model.switchGames.engine.map { "\($0.name) · \($0.license)" } ?? "")
-                    .padding(.bottom, 18)
-                SwitchEngineCard().frame(maxWidth: 680, alignment: .leading).padding(.bottom, 16)
-                Button(String(localized: "Spazio occupato")) { model.open(.space) }
-                    .buttonStyle(PlateaButtonStyle())
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 48).padding(.top, 52 + 30).padding(.bottom, 40)
-        }
-        .fadesUnderTopBar()
-    }
-}
-
 /// The engine that builds Switch games: the commit in use, what the latest one brings for the user's games,
 /// and moving to it (or back to the commit Retroteca tested). Games built before show "Aggiornamento da costruire".
 struct SwitchEngineCard: View {

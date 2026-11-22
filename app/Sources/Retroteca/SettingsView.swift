@@ -116,7 +116,7 @@ private struct SpaceSettingsTab: View {
             }
             LabeledContent("Quanto occupa Retroteca") {
                 Button("Apri la pagina Spazio") {
-                    model.open(.space)
+                    model.open(.settings(.space))
                     NSApp.keyWindow?.close()
                 }
             }
@@ -150,7 +150,7 @@ enum AppLanguage: String {
 }
 
 /// Controller: how Retroteca is driven, the connected pads, and each pad's buttons (saved per pad).
-private struct ControllerSettings: View {
+struct ControllerSettings: View {
     @EnvironmentObject var model: AppModel
     @AppStorage("inputMode") private var inputMode = InputMode.all.rawValue
     @State private var selectedPad: String?
