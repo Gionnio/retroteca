@@ -25,6 +25,10 @@ struct VetrinaView: View {
     }
     @State private var zone: Zone = .tiles
     @State private var openShot: Int?
+    /// The game whose details are drawn below the first screen. It follows the chosen game only once the focus rests,
+    /// because those cards read the game's files (sizes on a network disk, the built app): redrawing them on every
+    /// step of the row made moving left and right stutter.
+    @State private var detailsID: UUID?
 
     struct HomeAction {
         let symbol: String
@@ -61,7 +65,8 @@ struct VetrinaView: View {
                                 }
                                 .padding(.top, 52 + 28)
                             }
-                            Spacer(minLength: 16)
+                            // In a tall window the game stays close to the row: what is left goes below its buttons.
+                            Spacer(minLength: 16).frame(maxHeight: 110)
                             Group {
                                 if let hero {
                                     HeroView(game: hero, kicker: kicker(for: hero), focusedButton: buttonIndex) { showDetails(hero) }
@@ -70,13 +75,14 @@ struct VetrinaView: View {
                                 }
                             }
                             .padding(.bottom, 44)
+                            Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 48)
                         .frame(height: geo.size.height)
                         .id("top")
                         // Further down: the rest of the game's page.
-                        if let hero {
-                            details(hero).padding(.horizontal, 48).padding(.bottom, 60).id("details")
+                        if let shown = detailsID.flatMap(model.game(id:)) {
+                            details(shown).padding(.horizontal, 48).padding(.bottom, 60).id("details")
                         }
                     }
                 }
@@ -110,6 +116,11 @@ struct VetrinaView: View {
         .onKeyPress(.escape) { handle(.back, rows: rows) }
         .onReceive(model.navigation) { command in _ = handle(command, rows: rows) }
         .onChange(of: model.heroID) { _, _ in if zone != .tiles, !zone.inDetails { zone = .tiles } }
+        .task(id: hero?.id) {
+            guard detailsID != hero?.id else { return }
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            if !Task.isCancelled { detailsID = hero?.id }
+        }
     }
 
     private var buttonIndex: Int? { if case .buttons(let i) = zone { return i }; return nil }
@@ -140,12 +151,13 @@ struct VetrinaView: View {
     /// Down from the hero: the actions, or the screenshots when there are no actions.
     private func showDetails(_ game: Game) {
         InterfaceSound.select.play()
+        detailsID = game.id
         zone = actions(game).isEmpty ? (shots(game).isEmpty ? .tiles : .shots(0)) : .actions(0)
     }
 
     @ViewBuilder private func details(_ game: Game) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(game.title).font(.system(size: 22, weight: .bold)).foregroundStyle(colors.fg).padding(.top, 28)
+            Text(game.title).font(.system(size: 22, weight: .bold)).foregroundStyle(colors.fg).padding(.top, PageLayout.top)
             HStack(spacing: 12) {
                 ForEach(Array(actions(game).enumerated()), id: \.offset) { index, action in
                     ActionTile(symbol: action.symbol, title: action.title, focused: zone == .actions(index)) {
