@@ -156,7 +156,7 @@ struct GamePageView: View {
 }
 
 /// Platea's "Scheda tecnica", for games: engine, files, play time; the console choice when unrecognized.
-private struct HowItRunsCard: View {
+struct HowItRunsCard: View {
     @EnvironmentObject var model: AppModel
     @Environment(\.platea) private var colors
     let game: Game
@@ -230,10 +230,11 @@ struct FlowLayout: Layout {
 }
 
 /// One action of the game page, as a glass tile.
-private struct ActionTile: View {
+struct ActionTile: View {
     @Environment(\.platea) private var colors
     let symbol: String
     let title: String
+    var focused = false
     let action: () -> Void
     @State private var hovering = false
 
@@ -248,8 +249,8 @@ private struct ActionTile: View {
             .padding(12)
             .frame(width: 104, height: 78, alignment: .leading)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(hovering ? colors.fg : colors.line, lineWidth: hovering ? 2 : 1))
-            .scaleEffect(hovering ? 1.04 : 1)
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(hovering || focused ? colors.fg : colors.line, lineWidth: hovering || focused ? 2.5 : 1))
+            .scaleEffect(hovering || focused ? 1.05 : 1)
             .contentShape(RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)

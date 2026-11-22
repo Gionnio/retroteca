@@ -18,9 +18,24 @@ struct VetrinaView: View {
         let games: [Game]
     }
 
+    /// Where the pad's focus is: the tile row, the hero's buttons, then (scrolling down) the game's actions and screenshots.
+    enum Zone: Equatable {
+        case tiles, buttons(Int), actions(Int), shots(Int)
+        var inDetails: Bool { if case .actions = self { return true }; if case .shots = self { return true }; return false }
+    }
+    @State private var zone: Zone = .tiles
+    @State private var openShot: Int?
+
+    struct HomeAction {
+        let symbol: String
+        let title: String
+        let run: () -> Void
+    }
+
     var body: some View {
         let rows = makeRows()
         let hero = heroGame(rows)
+        GeometryReader { geo in
         ZStack(alignment: .topLeading) {
             // One picture per game: the old one fades out while the new one fades in.
             ZStack {
@@ -32,28 +47,52 @@ struct VetrinaView: View {
             }
             .animation(.easeInOut(duration: 0.25), value: hero?.id)
             BackdropShade().ignoresSafeArea()
-            // Gioco branch: the picture fills the screen, the hero sits at the top, the games in one row at the bottom.
-            VStack(alignment: .leading, spacing: 0) {
-                Group {
-                    if let hero {
-                        HeroView(game: hero, kicker: kicker(for: hero))
-                    } else {
-                        WelcomeHero()
+            // Further down, the game's details sit on a darker veil so the cards stay readable.
+            colors.bg.opacity(zone.inDetails ? 0.6 : 0).ignoresSafeArea().animation(.easeInOut(duration: 0.3), value: zone.inDetails)
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // First screen: the games on top, the chosen one's details at the bottom.
+                        VStack(alignment: .leading, spacing: 0) {
+                            if let row = rows.first {
+                                TileRow(row: row, focusedID: hero?.id, buildChip: buildChip) { game in
+                                    zone = .tiles
+                                    withAnimation(.easeOut(duration: 0.15)) { model.heroID = game.id }
+                                }
+                                .padding(.top, 52 + 28)
+                            }
+                            Spacer(minLength: 16)
+                            Group {
+                                if let hero {
+                                    HeroView(game: hero, kicker: kicker(for: hero), focusedButton: buttonIndex) { showDetails(hero) }
+                                } else {
+                                    WelcomeHero()
+                                }
+                            }
+                            .padding(.bottom, 44)
+                        }
+                        .padding(.horizontal, 48)
+                        .frame(height: geo.size.height)
+                        .id("top")
+                        // Further down: the rest of the game's page.
+                        if let hero {
+                            details(hero).padding(.horizontal, 48).padding(.bottom, 60).id("details")
+                        }
                     }
                 }
-                .padding(.horizontal, 48)
-                .padding(.top, 52 + 56)
-                Spacer(minLength: 20)
-                if let row = rows.first {
-                    TileRow(row: row, focusedID: hero?.id, buildChip: buildChip) { game in
-                        focusRow = row.id
-                        withAnimation(.easeOut(duration: 0.15)) { model.heroID = game.id }
-                    }
-                    .padding(.horizontal, 48)
-                    .padding(.bottom, 54)
+                .fadesUnderTopBar()
+                .onChange(of: zone.inDetails) { _, down in
+                    withAnimation(.easeInOut(duration: 0.35)) { proxy.scrollTo(down ? "details" : "top", anchor: .top) }
                 }
             }
+            if let hero {
+                ScreenshotViewer(title: hero.title, shots: hero.screenshots ?? [], index: $openShot)
+            }
         }
+        }
+        .animation(.easeOut(duration: 0.18), value: openShot)
+        .onChange(of: openShot) { _, index in model.viewerOpen = index != nil }
+        .onDisappear { model.viewerOpen = false }
         .focusable()
         .focused($focused)
         .focusEffectDisabled()
@@ -62,31 +101,116 @@ struct VetrinaView: View {
             // Every picture the Home page can show, decoded before it is needed.
             ArtworkCache.prefetch(rows.flatMap(\.games).flatMap { [$0.backdropURL ?? $0.coverURL, $0.coverURL] }.compactMap { $0 })
         }
-        .onKeyPress(.leftArrow) { move(rows, dx: -1, dy: 0) }
-        .onKeyPress(.rightArrow) { move(rows, dx: 1, dy: 0) }
-        .onKeyPress(.upArrow) { move(rows, dx: 0, dy: -1) }
-        .onKeyPress(.downArrow) { move(rows, dx: 0, dy: 1) }
-        .onKeyPress(.return) {
-            guard let hero else { return .ignored }
-            primaryAction(for: hero)
-            return .handled
-        }
-        .onKeyPress(.space) {
-            guard let hero else { return .ignored }
-            model.open(.game(hero.id))
-            return .handled
-        }
-        .onReceive(model.navigation) { command in
-            switch command {
-            case .left: _ = move(rows, dx: -1, dy: 0)
-            case .right: _ = move(rows, dx: 1, dy: 0)
-            case .up: _ = move(rows, dx: 0, dy: -1)
-            case .down: _ = move(rows, dx: 0, dy: 1)
-            case .select: if let hero { model.primaryAction(for: hero) }
-            case .secondary: if let hero { model.open(.game(hero.id)) }
-            default: break
+        .onKeyPress(.leftArrow) { handle(.left, rows: rows) }
+        .onKeyPress(.rightArrow) { handle(.right, rows: rows) }
+        .onKeyPress(.upArrow) { handle(.up, rows: rows) }
+        .onKeyPress(.downArrow) { handle(.down, rows: rows) }
+        .onKeyPress(.return) { handle(.select, rows: rows) }
+        .onKeyPress(.space) { handle(.secondary, rows: rows) }
+        .onKeyPress(.escape) { handle(.back, rows: rows) }
+        .onReceive(model.navigation) { command in _ = handle(command, rows: rows) }
+        .onChange(of: model.heroID) { _, _ in if zone != .tiles, !zone.inDetails { zone = .tiles } }
+    }
+
+    private var buttonIndex: Int? { if case .buttons(let i) = zone { return i }; return nil }
+
+    /// The hero's buttons, in order: play (or build), details, favourite.
+    private func heroButtons(_ game: Game) -> [() -> Void] {
+        [{ model.primaryAction(for: game) }, { showDetails(game) }, { model.toggleFavorite(game.id) }]
+    }
+
+    private func actions(_ game: Game) -> [HomeAction] {
+        var list: [HomeAction] = []
+        if game.nativeApp != nil {
+            list.append(HomeAction(symbol: "slider.horizontal.3", title: String(localized: "Impostazioni")) { model.openOptions(game.id, tab: .settings) })
+            list.append(HomeAction(symbol: "puzzlepiece.extension", title: String(localized: "Mod")) { model.openOptions(game.id, tab: .mods) })
+            list.append(HomeAction(symbol: "wand.and.stars", title: String(localized: "Trucchi")) { model.openOptions(game.id, tab: .cheats) })
+            list.append(HomeAction(symbol: "externaldrive", title: String(localized: "Salvataggi")) { model.openOptions(game.id, tab: .saves) })
+            if model.buildStage(game) == .none {
+                list.append(HomeAction(symbol: "arrow.triangle.2.circlepath", title: String(localized: "Ricostruisci")) { model.queueBuild(game) })
             }
         }
+        list.append(HomeAction(symbol: "folder", title: String(localized: "Finder")) { model.revealInFinder(game) })
+        list.append(HomeAction(symbol: "rectangle.portrait.and.arrow.right", title: String(localized: "Pagina gioco")) { model.open(.game(game.id)) })
+        return list
+    }
+
+    private func shots(_ game: Game) -> [URL] { game.screenshots ?? [] }
+
+    /// Down from the hero: the actions, or the screenshots when there are no actions.
+    private func showDetails(_ game: Game) {
+        InterfaceSound.select.play()
+        zone = actions(game).isEmpty ? (shots(game).isEmpty ? .tiles : .shots(0)) : .actions(0)
+    }
+
+    @ViewBuilder private func details(_ game: Game) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(game.title).font(.system(size: 22, weight: .bold)).foregroundStyle(colors.fg).padding(.top, 28)
+            HStack(spacing: 12) {
+                ForEach(Array(actions(game).enumerated()), id: \.offset) { index, action in
+                    ActionTile(symbol: action.symbol, title: action.title, focused: zone == .actions(index)) {
+                        zone = .actions(index)
+                        action.run()
+                    }
+                }
+            }
+            if !shots(game).isEmpty {
+                ScreenshotRow(shots: shots(game), source: String(localized: "dal negozio Nintendo"), focused: shotIndex) { openShot = $0 }
+            }
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HowItRunsCard(game: game)
+                    if let app = game.nativeApp, GamesLocation.isRetrotecaApp(app), GamesLocation.missingVolume(of: app) == nil {
+                        GameSpaceCard(game: game)
+                    }
+                }
+                .frame(maxWidth: 620, alignment: .leading)
+                SwitchBuildCard(game: game).frame(maxWidth: 620, alignment: .leading)
+            }
+        }
+    }
+
+    private var shotIndex: Int? { if case .shots(let i) = zone { return i }; return nil }
+
+    /// One command, from the keyboard or the pad, for the zone that has the focus.
+    private func handle(_ command: NavCommand, rows: [Row]) -> KeyPress.Result {
+        guard let hero = heroGame(rows) else { return .ignored }
+        if let open = openShot {
+            let count = shots(hero).count
+            switch command {
+            case .left: openShot = max(open - 1, 0)
+            case .right: openShot = min(open + 1, count - 1)
+            case .back, .select: openShot = nil
+            default: break
+            }
+            return .handled
+        }
+        let actionCount = actions(hero).count, shotCount = shots(hero).count
+        func go(_ next: Zone) { if next != zone { InterfaceSound.move.play(); zone = next } else { InterfaceSound.blocked.play() } }
+        switch (zone, command) {
+        case (.tiles, .left): return move(rows, dx: -1, dy: 0)
+        case (.tiles, .right): return move(rows, dx: 1, dy: 0)
+        case (.tiles, .down): go(.buttons(0))
+        case (.tiles, .select): model.primaryAction(for: hero)
+        case (.tiles, .secondary): showDetails(hero)
+        case (.buttons(let i), .left): go(.buttons(max(i - 1, 0)))
+        case (.buttons(let i), .right): go(.buttons(min(i + 1, 2)))
+        case (.buttons, .up), (.buttons, .back): go(.tiles)
+        case (.buttons, .down): showDetails(hero)
+        case (.buttons(let i), .select): heroButtons(hero)[i]()
+        case (.actions(let i), .left): go(.actions(max(i - 1, 0)))
+        case (.actions(let i), .right): go(.actions(min(i + 1, actionCount - 1)))
+        case (.actions, .up): go(.buttons(0))
+        case (.actions, .down): if shotCount > 0 { go(.shots(0)) }
+        case (.actions(let i), .select): if i < actionCount { actions(hero)[i].run() }
+        case (.actions, .back), (.shots, .back): go(.tiles)
+        case (.shots(let i), .left): go(.shots(max(i - 1, 0)))
+        case (.shots(let i), .right): go(.shots(min(i + 1, shotCount - 1)))
+        case (.shots, .up): go(actionCount > 0 ? .actions(0) : .buttons(0))
+        case (.shots(let i), .select): openShot = i
+        default: return .ignored
+        }
+        return .handled
     }
 
     // MARK: Rows
@@ -168,6 +292,8 @@ private struct HeroView: View {
     @Environment(\.platea) private var colors
     let game: Game
     let kicker: String
+    var focusedButton: Int? = nil
+    var details: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -187,10 +313,10 @@ private struct HeroView: View {
             Text(description).font(.system(size: 13)).foregroundStyle(colors.secondary)
                 .lineLimit(2, reservesSpace: true).frame(maxWidth: 520, alignment: .leading)
             HStack(spacing: 10) {
-                PrimaryGameButton(game: game)
-                Button("Dettagli") { model.open(.game(game.id)) }.buttonStyle(PlateaButtonStyle())
+                PrimaryGameButton(game: game).padFocus(focusedButton == 0)
+                Button { details() } label: { Label("Dettagli", systemImage: "chevron.down") }.buttonStyle(PlateaButtonStyle()).padFocus(focusedButton == 1)
                 Button { model.toggleFavorite(game.id) } label: { Image(systemName: game.isFavorite ? "heart.fill" : "heart") }
-                    .buttonStyle(PlateaButtonStyle())
+                    .buttonStyle(PlateaButtonStyle()).padFocus(focusedButton == 2)
             }
             .padding(.top, 16)
         }

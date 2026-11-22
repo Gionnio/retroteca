@@ -312,3 +312,13 @@ enum ArtworkCache {
     /// After the file at `url` was replaced.
     static func forget(_ url: URL) { cache.removeObject(forKey: url as NSURL) }
 }
+
+extension View {
+    /// The pad's focus on a button or tile: a white ring around it and a slight lift.
+    func padFocus(_ on: Bool, radius: CGFloat = 11) -> some View {
+        self
+            .overlay(RoundedRectangle(cornerRadius: radius + 3).strokeBorder(Color.white, lineWidth: 2.5).padding(-4).opacity(on ? 1 : 0))
+            .scaleEffect(on ? 1.05 : 1)
+            .animation(.easeOut(duration: 0.15), value: on)
+    }
+}
