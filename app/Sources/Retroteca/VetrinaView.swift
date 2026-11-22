@@ -65,8 +65,8 @@ struct VetrinaView: View {
                                 }
                                 .padding(.top, 52 + 28)
                             }
-                            // In a tall window the game stays close to the row: what is left goes below its buttons.
-                            Spacer(minLength: 16).frame(maxHeight: 110)
+                            // The game sits right under the row; in a tall window what is left goes below its buttons.
+                            Spacer().frame(height: 36)
                             Group {
                                 if let hero {
                                     HeroView(game: hero, kicker: kicker(for: hero), focusedButton: buttonIndex) { showDetails(hero) }
@@ -82,7 +82,11 @@ struct VetrinaView: View {
                         .id("top")
                         // Further down: the rest of the game's page.
                         if let shown = detailsID.flatMap(model.game(id:)) {
-                            details(shown).padding(.horizontal, 48).padding(.bottom, 60).id("details")
+                            details(shown).padding(.horizontal, 48).padding(.bottom, 60)
+                                // At least a window high, so scrolling down always brings its top right under the bar
+                                // (a game without screenshots has a short page that could not scroll that far).
+                                .frame(minHeight: geo.size.height, alignment: .top)
+                                .id("details")
                         }
                     }
                 }
