@@ -33,6 +33,7 @@ struct SwitchOptionsView: View {
             ZStack(alignment: .topLeading) {
                 // Settings sit over the art: blurred and darkened so the cards stay readable on bright artwork.
                 GameArt(game: game, backdrop: true).blur(radius: 24, opaque: true).ignoresSafeArea()
+                    .onAppear { tab = model.optionsTab; model.optionsTab = .settings }
                 colors.bg.opacity(0.84).ignoresSafeArea()
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {

@@ -44,16 +44,30 @@ struct GamePageView: View {
                             }
                             HStack(spacing: 10) {
                                 PrimaryGameButton(game: game)
-                                if game.nativeApp != nil {
-                                    Button("Opzioni") { model.open(.options(game.id)) }.buttonStyle(PlateaButtonStyle())
+                                if game.nativeApp != nil, model.buildStage(game) == .none {
+                                    Button { model.queueBuild(game) } label: { Label("Ricostruisci", systemImage: "arrow.triangle.2.circlepath") }
+                                        .buttonStyle(PlateaButtonStyle())
+                                        .disabled(game.status == .missingFiles || !model.switchHasBase(game))
                                 }
-                                Button("Mostra nel Finder") { model.revealInFinder(game) }.buttonStyle(PlateaButtonStyle())
-                                Button("Togli…") { confirmRemove = true }
-                                    .buttonStyle(PlateaButtonStyle())
                                 Button { model.toggleFavorite(game.id) } label: { Image(systemName: game.isFavorite ? "heart.fill" : "heart") }
                                     .buttonStyle(PlateaButtonStyle())
                             }
                             .padding(.top, 16)
+                            // Console-style actions: one tile each, under the main buttons.
+                            HStack(spacing: 12) {
+                                if game.nativeApp != nil {
+                                    ActionTile(symbol: "slider.horizontal.3", title: String(localized: "Impostazioni")) { model.openOptions(game.id, tab: .settings) }
+                                    ActionTile(symbol: "puzzlepiece.extension", title: String(localized: "Mod")) { model.openOptions(game.id, tab: .mods) }
+                                    ActionTile(symbol: "wand.and.stars", title: String(localized: "Trucchi")) { model.openOptions(game.id, tab: .cheats) }
+                                    ActionTile(symbol: "externaldrive", title: String(localized: "Salvataggi")) { model.openOptions(game.id, tab: .saves) }
+                                }
+                                if let shots = game.screenshots, !shots.isEmpty {
+                                    ActionTile(symbol: "photo.on.rectangle", title: String(localized: "Schermate")) { openShot = 0 }
+                                }
+                                ActionTile(symbol: "folder", title: String(localized: "Finder")) { model.revealInFinder(game) }
+                                ActionTile(symbol: "minus.circle", title: String(localized: "Togli")) { confirmRemove = true }
+                            }
+                            .padding(.top, 18)
                             HowItRunsCard(game: game).padding(.top, 18)
                             if let app = game.nativeApp, GamesLocation.isRetrotecaApp(app), GamesLocation.missingVolume(of: app) == nil {
                                 GameSpaceCard(game: game).padding(.top, 14)
@@ -212,5 +226,34 @@ struct FlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
+    }
+}
+
+/// One action of the game page, as a glass tile.
+private struct ActionTile: View {
+    @Environment(\.platea) private var colors
+    let symbol: String
+    let title: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 0) {
+                Image(systemName: symbol).font(.system(size: 19))
+                Spacer()
+                Text(title).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+            }
+            .foregroundStyle(colors.fg)
+            .padding(12)
+            .frame(width: 104, height: 78, alignment: .leading)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(hovering ? colors.fg : colors.line, lineWidth: hovering ? 2 : 1))
+            .scaleEffect(hovering ? 1.04 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.15), value: hovering)
     }
 }

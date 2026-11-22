@@ -45,7 +45,7 @@ struct LibraryGridView: View {
                     Text(model.games.isEmpty ? "La libreria è vuota: trascina qui i tuoi giochi." : "Nessun gioco con questi filtri.")
                         .foregroundStyle(colors.secondary).padding(.top, 40)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 140, maximum: 180), spacing: 16)], alignment: .leading, spacing: 20) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: 190), spacing: 18)], alignment: .leading, spacing: 22) {
                         ForEach(Array(games.enumerated()), id: \.element.id) { index, game in
                             BoxTile(game: game, isFocused: focus == index).id(game.id)
                         }
@@ -60,7 +60,7 @@ struct LibraryGridView: View {
         .fadesUnderTopBar()
         .scrollIndicators(.automatic)
         .onAppear { ArtworkCache.prefetch(model.games.compactMap { $0.coverURL ?? $0.backdropURL }) }
-        .gridNavigation(count: games.count, columns: adaptiveColumns(width: gridWidth, minimum: 140, spacing: 16), focus: $focus) { index in
+        .gridNavigation(count: games.count, columns: adaptiveColumns(width: gridWidth, minimum: 150, spacing: 18), focus: $focus) { index in
             model.open(.game(games[index].id))
         }
         .onChange(of: focus) { _, index in
@@ -156,7 +156,9 @@ private struct BoxTile: View {
                         .shadow(color: .black.opacity(0.7), radius: 3, y: 1).lineLimit(3).padding(8)
                 }
             }
-            .aspectRatio(0.72, contentMode: .fit)
+            .saturation(game.nativeApp == nil && model.buildStage(game) == .none ? 0.25 : 1)
+            .overlay { BuildOverlay(game: game) }
+            .aspectRatio(1, contentMode: .fit)
             .frame(maxWidth: .infinity)
             .overlay(alignment: .topTrailing) { StatusBadge(game: game) }
             .clipShape(RoundedRectangle(cornerRadius: 8))

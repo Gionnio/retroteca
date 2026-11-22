@@ -127,6 +127,63 @@ final class AppModel: ObservableObject {
         self.page = page
     }
 
+    // MARK: Quick menu and screensaver
+
+    @Published private(set) var quickMenuOpen = false
+    @Published var quickFocus = 0
+    @Published private(set) var screensaverOn = false
+    private var lastInput = Date()
+
+    func toggleQuickMenu() {
+        quickMenuOpen.toggle()
+        quickFocus = 0
+        (quickMenuOpen ? InterfaceSound.select : InterfaceSound.back).play()
+    }
+
+    /// Any key, click or pad button: the screensaver goes and the idle time starts again.
+    func noteInput() {
+        lastInput = Date()
+        if screensaverOn { screensaverOn = false }
+    }
+
+    func checkIdle() {
+        guard UserDefaults.standard.object(forKey: "screensaver") as? Bool ?? true, !screensaverOn,
+              runningGameID == nil, NSApp.isActive, !games.isEmpty else { return }
+        if Date().timeIntervalSince(lastInput) > 5 * 60 { screensaverOn = true }
+    }
+
+    enum QuickAction: CaseIterable {
+        case sounds, palette, space, settings, fullScreen, quit
+    }
+
+    func runQuick(_ action: QuickAction) {
+        switch action {
+        case .sounds:
+            let on = !InterfaceSound.isEnabled
+            UserDefaults.standard.set(on, forKey: InterfaceSound.settingKey)
+            if on { InterfaceSound.select.play() }
+            objectWillChange.send()
+        case .palette:
+            let all = PlateaPalette.allCases
+            let current = PlateaPalette(rawValue: UserDefaults.standard.string(forKey: "palette") ?? "") ?? .grafite
+            let next = all[((all.firstIndex(of: current) ?? 0) + 1) % all.count]
+            UserDefaults.standard.set(next.rawValue, forKey: "palette")
+            InterfaceSound.move.play()
+        case .space: quickMenuOpen = false; showSettings(.space)
+        case .settings: quickMenuOpen = false; showSettings(.general)
+        case .fullScreen: quickMenuOpen = false; NSApp.keyWindow?.toggleFullScreen(nil)
+        case .quit: NSApp.terminate(nil)
+        }
+    }
+
+    /// The tab a game's Options open on (set by the action tiles of the game page).
+    @Published var optionsTab: SwitchOptionsView.Tab = .settings
+
+    func openOptions(_ id: UUID, tab: SwitchOptionsView.Tab) {
+        optionsTab = tab
+        open(.options(id))
+    }
+
     /// Settings: another section replaces the one on screen (Back still leaves Settings).
     func showSettings(_ section: SettingsSection) {
         if case .settings = page { InterfaceSound.page.play(); page = .settings(section) } else { open(.settings(section)) }
@@ -255,6 +312,18 @@ final class AppModel: ObservableObject {
 
     /// A command from a controller (or a key the pages leave to the app): global ones here, the rest to the page on screen.
     func navigate(_ command: NavCommand) {
+        if screensaverOn { noteInput(); return }
+        noteInput()
+        if quickMenuOpen, command != .menu {
+            switch command {
+            case .left: quickFocus = max(quickFocus - 1, 0); InterfaceSound.move.play()
+            case .right: quickFocus = min(quickFocus + 1, QuickAction.allCases.count - 1); InterfaceSound.move.play()
+            case .select: runQuick(QuickAction.allCases[quickFocus])
+            case .back: toggleQuickMenu()
+            default: break
+            }
+            return
+        }
         switch command {
         case .back:
             if viewerOpen { navigation.send(.back) } else if launchingGameID != nil { cancelLaunch() } else if page.isDetail { back() }
@@ -266,7 +335,7 @@ final class AppModel: ObservableObject {
             let next = (current + (command == .nextPage ? 1 : -1) + topPages.count) % topPages.count
             open(topPages[next])
         case .menu:
-            NSApp.keyWindow?.toggleFullScreen(nil)
+            toggleQuickMenu()
         default:
             navigation.send(command)
         }

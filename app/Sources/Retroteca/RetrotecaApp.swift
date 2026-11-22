@@ -24,6 +24,10 @@ struct RetrotecaApp: App {
                 Button("Impostazioni…") { model.showSettings(.general) }
                     .keyboardShortcut(",")
             }
+            CommandGroup(after: .sidebar) {
+                Button("Menu rapido") { model.toggleQuickMenu() }
+                    .keyboardShortcut("k")
+            }
             CommandGroup(replacing: .newItem) {
                 Button("Aggiungi giochi…") { model.chooseFilesToImport() }
                     .keyboardShortcut("o")

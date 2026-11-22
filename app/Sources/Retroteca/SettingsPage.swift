@@ -63,6 +63,7 @@ private struct GeneralSection: View {
     @Environment(\.platea) private var colors
     @AppStorage("palette") private var palette = PlateaPalette.grafite.rawValue
     @AppStorage(InterfaceSound.settingKey) private var sounds = true
+    @AppStorage("screensaver") private var screensaver = true
     @AppStorage("checkFilesAtLaunch") private var checkFilesAtLaunch = true
     @AppStorage("copyGamesToLibrary") private var copyGamesToLibrary = false
     @AppStorage("downloadArtwork") private var downloadArtwork = true
@@ -91,6 +92,9 @@ private struct GeneralSection: View {
                 OptionRow(title: String(localized: "Suoni dell'interfaccia")) {
                     Toggle("", isOn: $sounds).labelsHidden().toggleStyle(.switch)
                         .onChange(of: sounds) { _, on in if on { InterfaceSound.select.play() } }
+                }
+                OptionRow(title: String(localized: "Salvaschermo"), note: String(localized: "Dopo 5 minuti senza tocchi.")) {
+                    Toggle("", isOn: $screensaver).labelsHidden().toggleStyle(.switch)
                 }
             }
             OptionCard(title: String(localized: "LIBRERIA")) {

@@ -257,20 +257,24 @@ struct PrimaryGameButton: View {
     let game: Game
 
     var body: some View {
-        if game.nativeApp == nil || model.switchGames.buildingID == game.id {
-            let manager = model.switchGames
-            if manager.buildingID == game.id {
-                let state = manager.builds[game.id] ?? NXBuildState()
-                Button { model.open(.build(game.id)) } label: {
-                    Label(String(localized: "Costruzione \(state.current ?? 0)/\(max(state.stageCount, 1)) · \(Int(state.overallFraction * 100))%"), systemImage: "hammer")
-                }
-                .buttonStyle(PlateaButtonStyle(primary: true))
-            } else {
-                Button { model.buildSwitchGame(game) } label: { Label("Costruisci per Mac", systemImage: "hammer") }
-                    .buttonStyle(PlateaButtonStyle(primary: true))
-                    .disabled(!(manager.toolchain?.isReady ?? false) || manager.isBusy || game.status == .missingFiles || !model.switchHasBase(game))
+        let manager = model.switchGames
+        switch model.buildStage(game) {
+        case .building(let fraction):
+            Button { model.open(.build(game.id)) } label: {
+                Label(String(localized: "Costruzione \(Int(fraction * 100))%"), systemImage: "hammer")
             }
-        } else {
+            .buttonStyle(PlateaButtonStyle(primary: true))
+        case .queued(let position):
+            Button { model.open(.builds) } label: { Label(String(localized: "In coda · \(position)°"), systemImage: "clock") }
+                .buttonStyle(PlateaButtonStyle(primary: true))
+        case .paused(let fraction):
+            Button { model.resumeBuild(game) } label: { Label(String(localized: "Riprendi · \(Int(fraction * 100))%"), systemImage: "play.fill") }
+                .buttonStyle(PlateaButtonStyle(primary: true))
+        case .none where game.nativeApp == nil:
+            Button { model.buildSwitchGame(game) } label: { Label("Costruisci per Mac", systemImage: "hammer") }
+                .buttonStyle(PlateaButtonStyle(primary: true))
+                .disabled(!(manager.toolchain?.isReady ?? false) || game.status == .missingFiles || !model.switchHasBase(game))
+        case .none:
             Button { model.play(game) } label: {
                 Label(model.runningGameID == game.id ? String(localized: "In gioco…") : String(localized: "Gioca"), systemImage: "play.fill")
             }

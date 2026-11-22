@@ -42,6 +42,10 @@ struct PlateaShell: View {
             if !model.viewerOpen { PlateaNavBar().transition(.opacity) }
             if !model.viewerOpen, !model.gamepads.pads.isEmpty { HintsBar().frame(maxHeight: .infinity, alignment: .bottom) }
             ToastOverlay()
+            ReadyNotice().frame(maxWidth: .infinity, alignment: .trailing)
+                .animation(.easeOut(duration: 0.3), value: model.readyNotice)
+            if model.quickMenuOpen { QuickMenu().zIndex(8) }
+            if model.screensaverOn { Screensaver().zIndex(20) }
             if let id = model.launchingGameID, let game = model.game(id: id) {
                 LaunchOverlay(game: game).zIndex(10)
             }
@@ -55,6 +59,16 @@ struct PlateaShell: View {
             }
         }
         .frame(minWidth: 1000, minHeight: 620)
+        .animation(.easeOut(duration: 0.2), value: model.quickMenuOpen)
+        .animation(.easeInOut(duration: 0.6), value: model.screensaverOn)
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in model.checkIdle() }
+        .onAppear {
+            // Keys, clicks and the pointer count as activity for the screensaver.
+            NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .mouseMoved, .scrollWheel]) { event in
+                model.noteInput()
+                return event
+            }
+        }
         .modifier(TransparentTitleBar())
         .onDrop(of: [UTType.fileURL], isTargeted: $isDropTargeted) { providers in
             model.importDropped(providers)
